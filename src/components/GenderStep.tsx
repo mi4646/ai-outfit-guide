@@ -1,5 +1,6 @@
 import { Shirt } from 'lucide-react'
 import type { Gender } from '../lib/recommend'
+import { STEPS, stepNumber } from '../lib/url-state'
 import { Button } from './ui/button'
 import {
   Card,
@@ -18,15 +19,21 @@ interface GenderStepProps {
   value: Gender | null
   onSelect: (gender: Gender) => void
   onNext: () => void
+  onBack: () => void
 }
 
-export function GenderStep({ value, onSelect, onNext }: GenderStepProps) {
+export function GenderStep({
+  value,
+  onSelect,
+  onNext,
+  onBack,
+}: GenderStepProps) {
   return (
     <Card>
       <CardContent className="space-y-6">
         <div className="space-y-2">
           <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-            Step 1 / 4
+            Step {stepNumber('gender')} / {STEPS.length}
           </p>
           <CardTitle>先选一下性别</CardTitle>
           <CardDescription>
@@ -58,7 +65,10 @@ export function GenderStep({ value, onSelect, onNext }: GenderStepProps) {
           ))}
         </RadioGroup>
 
-        <div className="flex justify-end">
+        <div className="flex items-center justify-between gap-3">
+          <Button variant="outline" onClick={onBack}>
+            返回
+          </Button>
           <Button size="lg" onClick={onNext} disabled={!value}>
             下一步
           </Button>

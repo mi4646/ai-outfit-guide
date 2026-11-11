@@ -1,6 +1,13 @@
 import type { ColorEntry } from '../data/colors'
 import { getProvince } from '../data/regions'
 import { classifyHarmony } from '../lib/color'
+import {
+  AGE_LABELS,
+  STYLE_LABELS,
+  profileNote,
+  type AgeBand,
+  type Style,
+} from '../lib/profile'
 import type { Gender, Recommendation } from '../lib/recommend'
 import {
   HARMONY_DESCRIPTIONS,
@@ -56,6 +63,8 @@ interface ResultViewProps {
   onActiveComboChange: (index: number) => void
   gender: Gender
   provinceId: string
+  age: AgeBand
+  style: Style
   onBack: () => void
   onRegion: () => void
   onReset: () => void
@@ -67,6 +76,8 @@ export function ResultView({
   onActiveComboChange,
   gender,
   provinceId,
+  age,
+  style,
   onBack,
   onRegion,
   onReset,
@@ -78,6 +89,7 @@ export function ResultView({
   const provinceName =
     getProvince(provinceId)?.name ??
     (provinceId === 'overseas' ? '海外' : '未选择地区')
+  const note = profileNote(age, style)
 
   return (
     <div className="space-y-4" aria-live="polite">
@@ -87,6 +99,12 @@ export function ResultView({
             <Badge variant="accent">{result.seasonLabel}</Badge>
             <Badge variant="outline">{provinceName}</Badge>
             <Badge variant="outline">{GENDER_LABELS[gender]}</Badge>
+            {style !== 'any' && (
+              <Badge variant="outline">{STYLE_LABELS[style]}</Badge>
+            )}
+            {age !== 'any' && (
+              <Badge variant="outline">{AGE_LABELS[age]}</Badge>
+            )}
             <Badge>{HARMONY_LABELS[harmonyKey]}</Badge>
           </div>
 
@@ -100,6 +118,11 @@ export function ResultView({
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
               {HARMONY_DESCRIPTIONS[harmonyKey]}
             </p>
+            {note && (
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                {note}
+              </p>
+            )}
           </div>
 
           <div className="space-y-1.5">
