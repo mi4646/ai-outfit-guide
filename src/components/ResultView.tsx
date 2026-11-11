@@ -65,6 +65,7 @@ interface ResultViewProps {
   provinceId: string
   age: AgeBand
   style: Style
+  temperature: number | null
   onBack: () => void
   onRegion: () => void
   onReset: () => void
@@ -78,6 +79,7 @@ export function ResultView({
   provinceId,
   age,
   style,
+  temperature,
   onBack,
   onRegion,
   onReset,
@@ -85,7 +87,7 @@ export function ResultView({
   const result = recommendation
   const combos = [result.primary, ...result.alternatives]
   const combo = combos[activeCombo] ?? result.primary
-  const harmonyKey = classifyHarmony(result.top.hex, combo.pants.color.hex)
+  const harmonyKey = classifyHarmony(combo.top.color.hex, combo.pants.color.hex)
   const provinceName =
     getProvince(provinceId)?.name ??
     (provinceId === 'overseas' ? '海外' : '未选择地区')
@@ -97,6 +99,9 @@ export function ResultView({
         <CardContent className="space-y-5">
           <div className="flex flex-wrap gap-2">
             <Badge variant="accent">{result.seasonLabel}</Badge>
+            {temperature !== null && (
+              <Badge variant="outline">实时 {Math.round(temperature)}°C</Badge>
+            )}
             <Badge variant="outline">{provinceName}</Badge>
             <Badge variant="outline">{GENDER_LABELS[gender]}</Badge>
             {style !== 'any' && (
@@ -123,6 +128,11 @@ export function ResultView({
                 {note}
               </p>
             )}
+            {result.pairNote && (
+              <p className="mt-2 text-sm leading-6 text-accent">
+                {result.pairNote}
+              </p>
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -133,14 +143,15 @@ export function ResultView({
             />
             <OutfitRow
               label="上衣"
-              color={result.top}
-              reason="你选择的主色，决定整套的冷暖与轻重。"
-              main
+              color={combo.top.color}
+              reason={combo.top.reason}
+              main={result.anchorRole === 'top'}
             />
             <OutfitRow
               label="裤子"
               color={combo.pants.color}
               reason={combo.pants.reason}
+              main={result.anchorRole === 'pants'}
             />
             <OutfitRow
               label="鞋"
@@ -172,7 +183,7 @@ export function ResultView({
                   type="button"
                   onClick={() => onActiveComboChange(index)}
                   aria-pressed={activeCombo === index}
-                  aria-label={`方案 ${index + 1}：${item.inner.color.name}、${item.pants.color.name}、${item.shoes.color.name}、${item.accent.color.name}`}
+                  aria-label={`方案 ${index + 1}：${item.inner.color.name}、${item.top.color.name}、${item.pants.color.name}、${item.shoes.color.name}、${item.accent.color.name}`}
                   className={cn(
                     'flex items-center justify-between gap-3 rounded-2xl border p-3 text-left transition-colors',
                     activeCombo === index
@@ -181,7 +192,7 @@ export function ResultView({
                   )}
                 >
                   <span className="flex items-center gap-1.5">
-                    {[item.inner, item.pants, item.shoes, item.accent].map(
+                    {[item.inner, item.top, item.pants, item.shoes, item.accent].map(
                       (pick) => (
                         <Swatch key={pick.role} color={pick.color} size="sm" />
                       ),
@@ -215,7 +226,7 @@ export function ResultView({
               </div>
             ) : (
               <p className="text-xs text-muted-foreground">
-                这组上衣没有明显冲突色。
+                这组搭配没有明显冲突色。
               </p>
             )}
             <p className="text-[11px] leading-5 text-muted-foreground">
@@ -226,7 +237,7 @@ export function ResultView({
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Button onClick={onBack}>换一件上衣</Button>
+        <Button onClick={onBack}>换一件已有单品</Button>
         <Button variant="outline" onClick={onRegion}>
           换个地区
         </Button>

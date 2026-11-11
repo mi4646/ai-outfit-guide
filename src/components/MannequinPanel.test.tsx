@@ -22,7 +22,7 @@ describe('MannequinPanel fallback', () => {
         gender="female"
         season="autumn"
         colors={{ top: TOP }}
-        status="top"
+        status="piece"
       />,
     )
     expect(html).toContain('女装人形轮廓')

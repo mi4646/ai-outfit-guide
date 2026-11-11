@@ -26,6 +26,14 @@ const WHITE: ColorEntry = {
   family: 'neutral',
 }
 
+const LIGHT_GREY = COLORS.find(
+  (color) => color.id === 'light-grey',
+) as ColorEntry
+
+const piece = (role: 'top' | 'pants', color: ColorEntry) => ({ role, color })
+const topPiece = (color: ColorEntry) => piece('top', color)
+const pantsPiece = (color: ColorEntry) => piece('pants', color)
+
 describe('color data', () => {
   it('ships exactly 60 colors', () => {
     expect(COLORS).toHaveLength(60)
@@ -53,7 +61,7 @@ describe('recommend', () => {
       gender: 'female',
       provinceId: 'guangdong',
       month: 7,
-      top: BLACK,
+      pieces: [topPiece(BLACK)],
     })
     expect(result.season).toBe('summer')
   })
@@ -63,7 +71,7 @@ describe('recommend', () => {
       gender: 'female',
       provinceId: 'guangdong',
       month: 7,
-      top: BLACK,
+      pieces: [topPiece(BLACK)],
     })
     expect(toOklch(result.primary.inner.color.hex).l).toBeGreaterThan(0.6)
   })
@@ -73,7 +81,7 @@ describe('recommend', () => {
       gender: 'female',
       provinceId: 'guangdong',
       month: 7,
-      top: BLACK,
+      pieces: [topPiece(BLACK)],
     })
     const picks = [
       result.primary.inner,
@@ -89,7 +97,7 @@ describe('recommend', () => {
       gender: 'male',
       provinceId: 'beijing',
       month: 1,
-      top: RED,
+      pieces: [topPiece(RED)],
     })
     const ids = [
       result.primary.inner.color.id,
@@ -105,7 +113,7 @@ describe('recommend', () => {
       gender: 'female',
       provinceId: 'shanghai',
       month: 4,
-      top: WHITE,
+      pieces: [topPiece(WHITE)],
     })
     expect(result.primary.inner.reason).toContain('明度差')
   })
@@ -115,7 +123,7 @@ describe('recommend', () => {
       gender: 'female',
       provinceId: 'guangdong',
       month: 7,
-      top: BLACK,
+      pieces: [topPiece(BLACK)],
     })
     expect(result.alternatives).toHaveLength(2)
     expect(Array.isArray(result.avoid)).toBe(true)
@@ -126,7 +134,7 @@ describe('recommend', () => {
       gender: 'female' as const,
       provinceId: 'guangdong',
       month: 7,
-      top: BLACK,
+      pieces: [topPiece(BLACK)],
     }
     expect(recommend(input)).toEqual(recommend(input))
   })
@@ -136,7 +144,7 @@ describe('recommend', () => {
       gender: 'male',
       provinceId: 'beijing',
       month: 1,
-      top: RED,
+      pieces: [topPiece(RED)],
     })
     const picks = [
       result.primary.inner,
@@ -154,7 +162,7 @@ describe('recommend', () => {
       gender: 'female',
       provinceId: 'guangdong',
       month: 7,
-      top: BLACK,
+      pieces: [topPiece(BLACK)],
       season: 'winter',
     })
     expect(result.season).toBe('winter')
@@ -170,6 +178,11 @@ const GOLDEN = {
       id: 'mist-blue',
       reason:
         '内搭选雾蓝：与上衣形成 0.65 明度差，中性安全；夏季用浅冷低饱和保持清爽。',
+    },
+    {
+      role: 'top',
+      id: 'black',
+      reason: '你选择的上衣，决定整套的冷暖与轻重。',
     },
     {
       role: 'pants',
@@ -190,14 +203,14 @@ const GOLDEN = {
     },
   ],
   alternatives: [
-    ['ivory', 'sand', 'mist-blue', 'mustard'],
-    ['mist-blue', 'oatmeal', 'ivory', 'coral'],
+    ['ivory', 'black', 'sand', 'mist-blue', 'mustard'],
+    ['mist-blue', 'black', 'oatmeal', 'ivory', 'coral'],
   ],
   avoid: [{ id: 'charcoal', reason: '与上衣太近（ΔE 5），会糊成一片。' }],
 }
 
 function signature(result: Recommendation) {
-  const roles: Role[] = ['inner', 'pants', 'shoes', 'accent']
+  const roles: Role[] = ['inner', 'top', 'pants', 'shoes', 'accent']
   const pick = (combo: OutfitCombo) =>
     roles.map((role) => ({
       role,
@@ -224,7 +237,7 @@ describe('profile golden', () => {
       gender: 'female' as const,
       provinceId: 'guangdong',
       month: 7,
-      top: BLACK,
+      pieces: [topPiece(BLACK)],
     }
     expect(signature(recommend(input))).toEqual(GOLDEN)
   })
@@ -235,7 +248,7 @@ describe('profile recommendations', () => {
     gender: 'female' as const,
     provinceId: 'guangdong',
     month: 7,
-    top: BLACK,
+    pieces: [topPiece(BLACK)],
   }
 
   it('keeps any/any identical to GOLDEN', () => {
@@ -313,5 +326,140 @@ describe('profile recommendations', () => {
         expect(result.alternatives).toHaveLength(2)
       }
     }
+  })
+})
+
+describe('anchor model', () => {
+  const base = {
+    gender: 'female' as const,
+    provinceId: 'guangdong',
+    month: 7,
+  }
+
+  it('keeps the chosen pants and recommends a top', () => {
+    const result = recommend({ ...base, pieces: [pantsPiece(RED)] })
+
+    expect(result.pants.id).toBe('red')
+    expect(result.primary.pants.color.id).toBe('red')
+    expect(result.primary.top.color.id).not.toBe('red')
+    expect(deltaE(RED.hex, result.primary.top.color.hex)).toBeGreaterThanOrEqual(
+      3,
+    )
+  })
+
+  it('explains free roles against the pants anchor', () => {
+    const result = recommend({ ...base, pieces: [pantsPiece(BLACK)] })
+
+    expect(result.primary.top.reason).toContain('与裤子')
+    expect(result.primary.inner.reason).toContain('与裤子')
+    expect(result.avoid[0]?.reason).toContain('与裤子')
+  })
+
+  it('marks a fixed piece as the user choice', () => {
+    const result = recommend({ ...base, pieces: [pantsPiece(RED)] })
+
+    expect(result.primary.pants.reason).toContain('你选择的裤子')
+  })
+
+  it('keeps both fixed pieces across every combo', () => {
+    const result = recommend({
+      ...base,
+      pieces: [topPiece(BLACK), pantsPiece(RED)],
+    })
+
+    for (const combo of [result.primary, ...result.alternatives]) {
+      expect(combo.top.color.id).toBe('black')
+      expect(combo.pants.color.id).toBe('red')
+    }
+  })
+
+  it('varies only the free roles when both pieces are fixed', () => {
+    const result = recommend({
+      ...base,
+      pieces: [topPiece(BLACK), pantsPiece(RED)],
+    })
+    const free = [
+      result.primary.inner,
+      result.primary.shoes,
+      result.primary.accent,
+    ]
+
+    expect(new Set(free.map((pick) => pick.color.id)).size).toBe(3)
+    for (const pick of free) {
+      expect(deltaE(BLACK.hex, pick.color.hex)).toBeGreaterThanOrEqual(3)
+      expect(deltaE(RED.hex, pick.color.hex)).toBeGreaterThanOrEqual(3)
+    }
+  })
+
+  it('varies the top between alternatives when pants is the anchor', () => {
+    const result = recommend({ ...base, pieces: [pantsPiece(RED)] })
+    const tops = [result.primary, ...result.alternatives].map(
+      (combo) => combo.top.color.id,
+    )
+
+    expect(new Set(tops).size).toBe(3)
+  })
+
+  it('varies at least two free roles between alternatives when both pieces are fixed', () => {
+    const result = recommend({
+      ...base,
+      pieces: [topPiece(WHITE), pantsPiece(WHITE)],
+    })
+    const free = (combo: OutfitCombo) => [
+      combo.inner.color.id,
+      combo.shoes.color.id,
+      combo.accent.color.id,
+    ]
+    const primary = free(result.primary)
+
+    for (const combo of result.alternatives) {
+      const next = free(combo)
+      const changed = next.filter((id, index) => id !== primary[index])
+      expect(changed.length).toBeGreaterThanOrEqual(2)
+    }
+  })
+
+  it('never lists a locked piece in the avoid list', () => {
+    const result = recommend({
+      ...base,
+      pieces: [topPiece(WHITE), pantsPiece(LIGHT_GREY)],
+    })
+    const avoidIds = result.avoid.map((item) => item.color.id)
+
+    expect(avoidIds).not.toContain('light-grey')
+    expect(avoidIds).not.toContain('white')
+  })
+
+  it('rejects an empty or duplicate piece list', () => {
+    expect(() => recommend({ ...base, pieces: [] })).toThrow('固定单品')
+    expect(() =>
+      recommend({
+        ...base,
+        pieces: [topPiece(BLACK), topPiece(RED)],
+      }),
+    ).toThrow('固定单品')
+  })
+
+  it('flags a fixed pair that is too close', () => {
+    const result = recommend({
+      ...base,
+      pieces: [topPiece(WHITE), pantsPiece(WHITE)],
+    })
+
+    expect(result.pairNote).toContain('太接近')
+  })
+
+  it('leaves a contrasting fixed pair without a note', () => {
+    const result = recommend({
+      ...base,
+      pieces: [topPiece(BLACK), pantsPiece(WHITE)],
+    })
+
+    expect(result.pairNote).toBeNull()
+  })
+
+  it('is deterministic for a pants anchor', () => {
+    const input = { ...base, pieces: [pantsPiece(RED)] }
+    expect(recommend(input)).toEqual(recommend(input))
   })
 })

@@ -1,6 +1,6 @@
 import { COLORS, customColor, type ColorEntry } from '../data/colors'
 import type { Season } from '../data/regions'
-import type { Gender } from './recommend'
+import type { AnchorRole, Gender } from './recommend'
 import { AGE_BANDS, STYLES, type AgeBand, type Style } from './profile'
 
 export type Step = 'profile' | 'gender' | 'region' | 'color' | 'result'
@@ -11,6 +11,8 @@ export interface AppState {
   month: number
   seasonOverride: Season | null
   top: ColorEntry | null
+  pants: ColorEntry | null
+  anchor: AnchorRole | null
   age: AgeBand
   style: Style
   step: Step
@@ -28,14 +30,14 @@ export const STEPS: readonly StepDef[] = [
   { id: 'region', label: '地区', requires: (state) => Boolean(state.gender) },
   {
     id: 'color',
-    label: '上衣',
+    label: '单品',
     requires: (state) => Boolean(state.gender && state.provinceId),
   },
   {
     id: 'result',
     label: '配色',
     requires: (state) =>
-      Boolean(state.gender && state.provinceId && state.top),
+      Boolean(state.gender && state.provinceId && resolveAnchor(state)),
   },
 ]
 
@@ -72,14 +74,9 @@ export function parseState(search: string): Partial<AppState> {
     ? (styleParam as Style)
     : 'any'
 
-  const hexParam = params.get('c')
-  let top: ColorEntry | null = null
-  if (hexParam && /^[0-9a-f]{6}$/i.test(hexParam)) {
-    const hex = `#${hexParam.toLowerCase()}`
-    top =
-      COLORS.find((color) => color.hex.toLowerCase() === hex) ??
-      customColor(hex)
-  }
+  const top = parseColor(params.get('c'))
+  const pants = parseColor(params.get('pc'))
+  const anchor = parseAnchor(params.get('k'), top, pants)
 
   const stepParam = params.get('step')
   const step: Step | undefined =
@@ -91,7 +88,39 @@ export function parseState(search: string): Partial<AppState> {
       ? stepParam
       : undefined
 
-  return { gender, provinceId, month, seasonOverride, top, age, style, step }
+  return {
+    gender,
+    provinceId,
+    month,
+    seasonOverride,
+    top,
+    pants,
+    anchor,
+    age,
+    style,
+    step,
+  }
+}
+
+function parseColor(value: string | null): ColorEntry | null {
+  if (!value || !/^[0-9a-f]{6}$/i.test(value)) return null
+  const hex = `#${value.toLowerCase()}`
+  return (
+    COLORS.find((color) => color.hex.toLowerCase() === hex) ??
+    customColor(hex)
+  )
+}
+
+function parseAnchor(
+  requested: string | null,
+  top: ColorEntry | null,
+  pants: ColorEntry | null,
+): AnchorRole | null {
+  if (requested === 'pants' && pants) return 'pants'
+  if (requested === 'top' && top) return 'top'
+  if (top) return 'top'
+  if (pants) return 'pants'
+  return null
 }
 
 export function toSearch(state: AppState): string {
@@ -101,6 +130,10 @@ export function toSearch(state: AppState): string {
   params.set('m', String(state.month))
   if (state.seasonOverride) params.set('s', state.seasonOverride)
   if (state.top) params.set('c', state.top.hex.slice(1))
+  if (state.pants) params.set('pc', state.pants.hex.slice(1))
+  if (state.anchor === 'pants' && state.pants && state.top) {
+    params.set('k', 'pants')
+  }
   if (state.age !== 'any') params.set('a', state.age)
   if (state.style !== 'any') params.set('f', state.style)
   params.set('step', state.step)
@@ -115,11 +148,19 @@ export function canGo(state: Partial<AppState>, step: Step): boolean {
   return STEPS.find((item) => item.id === step)?.requires(state) ?? false
 }
 
+export function resolveAnchor(state: Partial<AppState>): AnchorRole | null {
+  if (state.anchor === 'pants') return state.pants ? 'pants' : null
+  if (state.anchor === 'top') return state.top ? 'top' : null
+  if (state.top) return 'top'
+  if (state.pants) return 'pants'
+  return null
+}
+
 export function resolveStep(state: Partial<AppState>): Step {
   const requested = STEPS.find((step) => step.id === state.step)
   if (requested && requested.requires(state)) return requested.id
   if (!state.gender) return 'profile'
   if (!state.provinceId) return 'region'
-  if (!state.top) return 'color'
+  if (!resolveAnchor(state)) return 'color'
   return 'result'
 }

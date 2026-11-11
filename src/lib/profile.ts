@@ -18,7 +18,7 @@ export type Style =
   | 'sport'
   | 'any'
 
-export type ProfileRole = 'inner' | 'pants' | 'shoes' | 'accent'
+export type ProfileRole = 'inner' | 'top' | 'pants' | 'shoes' | 'accent'
 
 export interface ProfileRow {
   family: Partial<Record<ColorFamily, number>>

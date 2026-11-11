@@ -20,13 +20,21 @@ import {
 
 export type Gender = 'male' | 'female'
 
-export type Role = 'inner' | 'pants' | 'shoes' | 'accent'
+export type AnchorRole = 'top' | 'pants'
+
+export type Role = 'inner' | 'top' | 'pants' | 'shoes' | 'accent'
+
+export interface Piece {
+  role: AnchorRole
+  color: ColorEntry
+}
 
 export interface RecommendationInput {
   gender: Gender
   provinceId: string
   month: number
-  top: ColorEntry
+  /** pieces[0] 是锚点，其余为额外锁定的单品。 */
+  pieces: Piece[]
   season?: Season
   age?: AgeBand
   style?: Style
@@ -41,6 +49,7 @@ export interface RolePick {
 
 export interface OutfitCombo {
   inner: RolePick
+  top: RolePick
   pants: RolePick
   shoes: RolePick
   accent: RolePick
@@ -50,13 +59,16 @@ export interface Recommendation {
   season: Season
   seasonLabel: string
   top: ColorEntry
+  pants: ColorEntry
   primary: OutfitCombo
   alternatives: OutfitCombo[]
   avoid: Array<{ color: ColorEntry; reason: string }>
   harmony: { key: HarmonyKey; label: string; description: string }
+  anchorRole: AnchorRole
+  pairNote: string | null
 }
 
-const ROLES: Role[] = ['inner', 'pants', 'shoes', 'accent']
+const ROLES: Role[] = ['inner', 'top', 'pants', 'shoes', 'accent']
 
 const SEASON_LABELS: Record<Season, string> = {
   spring: '春季',
@@ -107,6 +119,14 @@ const ROLE_WEIGHTS: Record<Role, Record<WeightKey, number>> = {
     gender: 0.12,
     anchor: 0.15,
   },
+  top: {
+    harmony: 0.26,
+    contrast: 0.2,
+    season: 0.2,
+    chroma: 0.08,
+    gender: 0.12,
+    anchor: 0.14,
+  },
   pants: {
     harmony: 0.22,
     contrast: 0.19,
@@ -135,6 +155,7 @@ const ROLE_WEIGHTS: Record<Role, Record<WeightKey, number>> = {
 
 const MIN_CONTRAST: Record<Role, number> = {
   inner: 0.18,
+  top: 0.12,
   pants: 0.1,
   shoes: 0.05,
   accent: 0.15,
@@ -142,6 +163,7 @@ const MIN_CONTRAST: Record<Role, number> = {
 
 const TARGET_CHROMA: Record<Role, number> = {
   inner: 0.04,
+  top: 0.06,
   pants: 0.05,
   shoes: 0.04,
   accent: 0.13,
@@ -157,6 +179,10 @@ interface Scored {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value))
+}
+
+function average(values: number[]): number {
+  return values.reduce((total, value) => total + value, 0) / values.length
 }
 
 function resolveSeason(input: RecommendationInput): Season {
@@ -205,17 +231,17 @@ function seasonFit(color: ColorEntry, season: Season): number {
   return clamp(0.4 * hueFit + 0.4 * lightnessFit + 0.2 * chromaFit, 0, 1)
 }
 
-function harmonyScore(top: Oklch, candidate: Oklch): number {
-  if (top.c < 0.04 || candidate.c < 0.04) return 1
-  const distance = hueDistance(top.h, candidate.h)
+function harmonyScore(reference: Oklch, candidate: Oklch): number {
+  if (reference.c < 0.04 || candidate.c < 0.04) return 1
+  const distance = hueDistance(reference.h, candidate.h)
   const nearest = Math.min(
     ...HARMONY_TARGETS.map((target) => Math.abs(distance - target)),
   )
   return clamp(1 - nearest / 90, 0, 1)
 }
 
-function contrastScore(top: Oklch, candidate: Oklch, role: Role): number {
-  const difference = Math.abs(top.l - candidate.l)
+function contrastScore(reference: Oklch, candidate: Oklch, role: Role): number {
+  const difference = Math.abs(reference.l - candidate.l)
   if (difference < 0.08) return 0
   const minimum = MIN_CONTRAST[role]
   if (difference >= minimum) return 1
@@ -254,6 +280,10 @@ function roleAnchor(color: ColorEntry, role: Role): number {
     if (color.family === 'neutral') return 1
     return c < 0.09 ? 0.82 : 0.5
   }
+  if (role === 'top') {
+    if (color.family === 'neutral') return 1
+    return c < 0.1 ? 0.85 : 0.6
+  }
   if (role === 'pants') {
     if (color.family === 'neutral' || color.family === 'earth') return 1
     return c < 0.1 ? 0.8 : 0.55
@@ -266,7 +296,7 @@ function roleAnchor(color: ColorEntry, role: Role): number {
 }
 
 function scoreColor(
-  top: Oklch,
+  fixed: Scored[],
   color: ColorEntry,
   role: Role,
   season: Season,
@@ -277,8 +307,12 @@ function scoreColor(
   const candidate = toOklch(color.hex)
   const weights = ROLE_WEIGHTS[role]
   const base =
-    weights.harmony * harmonyScore(top, candidate) +
-    weights.contrast * contrastScore(top, candidate, role) +
+    weights.harmony *
+      average(fixed.map((piece) => harmonyScore(piece.oklch, candidate))) +
+    weights.contrast *
+      average(
+        fixed.map((piece) => contrastScore(piece.oklch, candidate, role)),
+      ) +
     weights.season * seasonFit(color, season) +
     weights.chroma * chromaScore(candidate, role) +
     weights.gender * genderScore(color, role, gender) +
@@ -286,8 +320,15 @@ function scoreColor(
 
   const styleRow = style === 'any' ? null : STYLE_PROFILES[style]
   const ageRow = age === 'any' ? null : AGE_PROFILES[age]
-  const stylePreference = preferenceFor(color, candidate, role, top.l, styleRow)
-  const agePreference = preferenceFor(color, candidate, role, top.l, ageRow)
+  const referenceL = fixed[0].oklch.l
+  const stylePreference = preferenceFor(
+    color,
+    candidate,
+    role,
+    referenceL,
+    styleRow,
+  )
+  const agePreference = preferenceFor(color, candidate, role, referenceL, ageRow)
 
   return (
     base +
@@ -298,20 +339,21 @@ function scoreColor(
 
 function candidatesFor(
   role: Role,
-  top: ColorEntry,
-  topOklch: Oklch,
+  fixed: Scored[],
   season: Season,
   gender: Gender,
   style: Style,
   age: AgeBand,
 ): Scored[] {
-  return COLORS.filter(
-    (color) => color.id !== top.id && deltaE(top.hex, color.hex) >= 3,
+  return COLORS.filter((color) =>
+    fixed.every(
+      (piece) => piece.color.id !== color.id && deltaE(piece.color.hex, color.hex) >= 3,
+    ),
   )
     .map((color) => ({
       color,
       oklch: toOklch(color.hex),
-      score: scoreColor(topOklch, color, role, season, gender, style, age),
+      score: scoreColor(fixed, color, role, season, gender, style, age),
     }))
     .sort(
       (first, second) =>
@@ -335,20 +377,26 @@ function comboKey(picks: Record<Role, Scored>): string {
   return ROLES.map((role) => picks[role].color.id).join('|')
 }
 
+function anchorLabel(anchorRole: AnchorRole): string {
+  return anchorRole === 'top' ? '上衣' : '裤子'
+}
+
 function reasonFor(
   role: Role,
   pick: Scored,
-  top: ColorEntry,
+  anchor: { role: AnchorRole; color: ColorEntry; oklch: Oklch },
   season: Season,
 ): string {
-  const topOklch = toOklch(top.hex)
-  const difference = Math.abs(topOklch.l - pick.oklch.l).toFixed(2)
-  const harmony = HARMONY_LABELS[classifyHarmony(top.hex, pick.color.hex)]
+  const difference = Math.abs(anchor.oklch.l - pick.oklch.l).toFixed(2)
+  const harmony = HARMONY_LABELS[
+    classifyHarmony(anchor.color.hex, pick.color.hex)
+  ]
   const seasonText = SEASON_REASONS[season]
+  const label = anchorLabel(anchor.role)
 
   if (role === 'accent') {
-    return `点缀选${pick.color.name}：与上衣色相相距 ${hueDistance(
-      topOklch.h,
+    return `点缀选${pick.color.name}：与${label}色相相距 ${hueDistance(
+      anchor.oklch.h,
       pick.oklch.h,
     ).toFixed(0)}°，小面积对比，约占 10%。`
   }
@@ -356,66 +404,90 @@ function reasonFor(
     return `鞋子选${pick.color.name}：明度差 ${difference}，${harmony}；${seasonText}，收住整体。`
   }
   if (role === 'pants') {
-    return `裤子选${pick.color.name}：与上衣形成 ${difference} 明度差，${harmony}；${seasonText}，下半身更稳。`
+    return `裤子选${pick.color.name}：与${label}形成 ${difference} 明度差，${harmony}；${seasonText}，下半身更稳。`
   }
-  return `内搭选${pick.color.name}：与上衣形成 ${difference} 明度差，${harmony}；${seasonText}。`
+  if (role === 'top') {
+    return `上衣选${pick.color.name}：与${label}形成 ${difference} 明度差，${harmony}；${seasonText}。`
+  }
+  return `内搭选${pick.color.name}：与${label}形成 ${difference} 明度差，${harmony}；${seasonText}。`
 }
 
-function toPick(
-  role: Role,
-  pick: Scored,
-  top: ColorEntry,
-  season: Season,
-): RolePick {
-  return {
-    role,
-    color: pick.color,
-    score: pick.score,
-    reason: reasonFor(role, pick, top, season),
-  }
+function fixedReason(role: Role): string {
+  return role === 'pants'
+    ? '你选择的裤子，作为整套的下半身基准。'
+    : '你选择的上衣，决定整套的冷暖与轻重。'
 }
 
 function toCombo(
   picks: Record<Role, Scored>,
-  top: ColorEntry,
+  anchor: { role: AnchorRole; color: ColorEntry; oklch: Oklch },
   season: Season,
+  fixedByRole: Partial<Record<Role, Scored>>,
 ): OutfitCombo {
+  const pick = (role: Role): RolePick => {
+    const scored = picks[role]
+    return fixedByRole[role]
+      ? {
+          role,
+          color: scored.color,
+          score: scored.score,
+          reason: fixedReason(role),
+        }
+      : {
+          role,
+          color: scored.color,
+          score: scored.score,
+          reason: reasonFor(role, scored, anchor, season),
+        }
+  }
+
   return {
-    inner: toPick('inner', picks.inner, top, season),
-    pants: toPick('pants', picks.pants, top, season),
-    shoes: toPick('shoes', picks.shoes, top, season),
-    accent: toPick('accent', picks.accent, top, season),
+    inner: pick('inner'),
+    top: pick('top'),
+    pants: pick('pants'),
+    shoes: pick('shoes'),
+    accent: pick('accent'),
   }
 }
 
+function combinations(
+  roles: Role[],
+  pools: Record<Role, Scored[]>,
+): Array<Partial<Record<Role, Scored>>> {
+  let results: Array<Partial<Record<Role, Scored>>> = [{}]
+  for (const role of roles) {
+    const next: typeof results = []
+    for (const partial of results) {
+      for (const pick of pools[role]) next.push({ ...partial, [role]: pick })
+    }
+    results = next
+  }
+  return results
+}
+
 function buildCombos(
-  top: ColorEntry,
-  topOklch: Oklch,
+  fixedByRole: Partial<Record<Role, Scored>>,
+  fixed: Scored[],
+  anchor: { role: AnchorRole; color: ColorEntry; oklch: Oklch },
   season: Season,
   gender: Gender,
   style: Style,
   age: AgeBand,
 ): OutfitCombo[] {
-  const pools: Record<Role, Scored[]> = {
-    inner: candidatesFor('inner', top, topOklch, season, gender, style, age),
-    pants: candidatesFor('pants', top, topOklch, season, gender, style, age),
-    shoes: candidatesFor('shoes', top, topOklch, season, gender, style, age),
-    accent: candidatesFor('accent', top, topOklch, season, gender, style, age),
+  const freeRoles = ROLES.filter((role) => !fixedByRole[role])
+  const pools = {} as Record<Role, Scored[]>
+  for (const role of ROLES) {
+    pools[role] = fixedByRole[role]
+      ? []
+      : candidatesFor(role, fixed, season, gender, style, age)
   }
 
   const combos: Array<{ picks: Record<Role, Scored>; score: number }> = []
-  for (const inner of pools.inner) {
-    for (const pants of pools.pants) {
-      for (const shoes of pools.shoes) {
-        for (const accent of pools.accent) {
-          if (!isDistinct([inner, pants, shoes, accent])) continue
-          const picks = { inner, pants, shoes, accent }
-          const score =
-            (inner.score + pants.score + shoes.score + accent.score) / 4
-          combos.push({ picks, score })
-        }
-      }
-    }
+  for (const freePicks of combinations(freeRoles, pools)) {
+    const picks = { ...fixedByRole, ...freePicks } as Record<Role, Scored>
+    const chosen = freeRoles.map((role) => picks[role])
+    if (!isDistinct(chosen)) continue
+    combos.push({ picks, score: average(chosen.map((pick) => pick.score)) })
   }
 
   combos.sort(
@@ -424,28 +496,45 @@ function buildCombos(
       comboKey(first.picks).localeCompare(comboKey(second.picks)),
   )
 
+  // 固定件越多，自由角色越少；阈值跟着降，避免备选只换点缀。
+  const repeatLimit = Math.min(3, freeRoles.length - 1)
+  // 上衣锚点保留旧输出；裤子锚点要求每套备选都换一件上衣。
+  const partnerRole: Role | null =
+    anchor.role === 'pants' && !fixedByRole.top ? 'top' : null
   const chosen: typeof combos = []
   for (const combo of combos) {
     if (chosen.length >= 3) break
-    const repeatsThreeRoles = chosen.some(
+    const repeatsTooMany = chosen.some(
       (picked) =>
-        ROLES.filter(
+        freeRoles.filter(
           (role) => picked.picks[role].color.id === combo.picks[role].color.id,
-        ).length >= 3,
+        ).length >= repeatLimit,
     )
-    if (!repeatsThreeRoles) chosen.push(combo)
+    const partnerRepeats =
+      partnerRole !== null &&
+      chosen.some(
+        (picked) =>
+          picked.picks[partnerRole].color.id ===
+          combo.picks[partnerRole].color.id,
+      )
+    if (!repeatsTooMany && !partnerRepeats) chosen.push(combo)
   }
   for (const combo of combos) {
     if (chosen.length >= 3) break
     if (!chosen.includes(combo)) chosen.push(combo)
   }
 
-  return chosen.map(({ picks }) => toCombo(picks, top, season))
+  return chosen.map(({ picks }) => toCombo(picks, anchor, season, fixedByRole))
 }
 
-function avoidFor(top: ColorEntry): Array<{ color: ColorEntry; reason: string }> {
-  return COLORS.filter((color) => color.id !== top.id)
-    .map((color) => ({ color, distance: deltaE(top.hex, color.hex) }))
+function avoidFor(
+  anchorColor: ColorEntry,
+  anchorRole: AnchorRole,
+  fixed: ColorEntry[],
+): Array<{ color: ColorEntry; reason: string }> {
+  const fixedIds = new Set(fixed.map((color) => color.id))
+  return COLORS.filter((color) => !fixedIds.has(color.id))
+    .map((color) => ({ color, distance: deltaE(anchorColor.hex, color.hex) }))
     .filter(({ distance }) => distance < 10)
     .sort(
       (first, second) =>
@@ -455,36 +544,80 @@ function avoidFor(top: ColorEntry): Array<{ color: ColorEntry; reason: string }>
     .slice(0, 4)
     .map(({ color, distance }) => ({
       color,
-      reason: `与上衣太近（ΔE ${distance.toFixed(0)}），会糊成一片。`,
+      reason: `与${anchorLabel(anchorRole)}太近（ΔE ${distance.toFixed(0)}），会糊成一片。`,
     }))
 }
 
+function pairNoteFor(top: ColorEntry, pants: ColorEntry): string | null {
+  const distance = deltaE(top.hex, pants.hex)
+  if (distance < 8) {
+    return `两件已选色太接近（ΔE ${distance.toFixed(0)}），容易糊成一片。`
+  }
+  const lightness = Math.abs(toOklch(top.hex).l - toOklch(pants.hex).l)
+  if (lightness < 0.08) {
+    return `两件已选色明度接近（差 ${lightness.toFixed(2)}），上下装会缺少层次。`
+  }
+  return null
+}
+
 export function recommend(input: RecommendationInput): Recommendation {
+  const roles = new Set(input.pieces.map((piece) => piece.role))
+  if (
+    input.pieces.length === 0 ||
+    input.pieces.length > 2 ||
+    roles.size !== input.pieces.length
+  ) {
+    throw new Error('recommend 需要 1–2 件不重复的固定单品')
+  }
+
   const season = resolveSeason(input)
-  const topOklch = toOklch(input.top.hex)
+  const fixedByRole: Partial<Record<Role, Scored>> = {}
+  for (const piece of input.pieces) {
+    fixedByRole[piece.role] = {
+      color: piece.color,
+      oklch: toOklch(piece.color.hex),
+      score: 1,
+    }
+  }
+  const fixed = Object.values(fixedByRole) as Scored[]
+  const anchorPiece = input.pieces[0]
+  const anchor = {
+    role: anchorPiece.role,
+    color: anchorPiece.color,
+    oklch: toOklch(anchorPiece.color.hex),
+  }
   const combos = buildCombos(
-    input.top,
-    topOklch,
+    fixedByRole,
+    fixed,
+    anchor,
     season,
     input.gender,
     input.style ?? 'any',
     input.age ?? 'any',
   )
   const [primary, ...alternatives] = combos
+  const top = primary.top.color
   const pants = primary.pants.color
-  const key = classifyHarmony(input.top.hex, pants.hex)
+  const key = classifyHarmony(top.hex, pants.hex)
 
   return {
     season,
     seasonLabel: SEASON_LABELS[season],
-    top: input.top,
+    top,
+    pants,
     primary,
     alternatives,
-    avoid: avoidFor(input.top),
+    avoid: avoidFor(
+      input.pieces[0].color,
+      input.pieces[0].role,
+      input.pieces.map((piece) => piece.color),
+    ),
     harmony: {
       key,
       label: HARMONY_LABELS[key],
       description: HARMONY_DESCRIPTIONS[key],
     },
+    anchorRole: input.pieces[0].role,
+    pairNote: input.pieces.length === 2 ? pairNoteFor(top, pants) : null,
   }
 }

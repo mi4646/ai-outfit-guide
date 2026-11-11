@@ -17,7 +17,7 @@ import { Card } from './ui/card'
 
 const Mannequin3D = lazy(() => import('./mannequin3d/Mannequin3D'))
 
-export type MannequinStatus = 'pending' | 'top' | 'result'
+export type MannequinStatus = 'pending' | 'piece' | 'result'
 
 interface MannequinPanelProps {
   gender: Gender
@@ -28,7 +28,7 @@ interface MannequinPanelProps {
 
 const STATUS_LABELS: Record<MannequinStatus, string> = {
   pending: '待配色',
-  top: '已选上衣',
+  piece: '已选单品',
   result: '今日配色',
 }
 
