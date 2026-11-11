@@ -8,6 +8,7 @@ import {
   type ZoneId,
 } from '../data/regions'
 import { locate, seasonOf } from '../lib/season'
+import { STEPS, stepNumber } from '../lib/url-state'
 import { cn } from '../lib/utils'
 import { Button } from './ui/button'
 import {
@@ -90,7 +91,7 @@ export function RegionStep({
       <CardContent className="space-y-6">
         <div className="space-y-2">
           <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-            Step 2 / 4
+            Step {stepNumber('region')} / {STEPS.length}
           </p>
           <CardTitle>你在哪里过这个季节？</CardTitle>
           <CardDescription>

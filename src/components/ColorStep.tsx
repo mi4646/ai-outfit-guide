@@ -5,6 +5,7 @@ import {
   type ColorEntry,
   type ColorFamily,
 } from '../data/colors'
+import { STEPS, stepNumber } from '../lib/url-state'
 import { cn } from '../lib/utils'
 import { ColorOption, Swatch } from './ColorSwatch'
 import { Button } from './ui/button'
@@ -52,7 +53,7 @@ export function ColorStep({ value, onSelect, onNext, onBack }: ColorStepProps) {
       <CardContent className="space-y-6">
         <div className="space-y-2">
           <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-            Step 3 / 4
+            Step {stepNumber('color')} / {STEPS.length}
           </p>
           <CardTitle>选一件上衣的颜色</CardTitle>
           <CardDescription>

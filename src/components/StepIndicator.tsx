@@ -1,38 +1,42 @@
 import { Check } from 'lucide-react'
-import type { Step } from '../lib/url-state'
+import { STEPS, type Step } from '../lib/url-state'
 import { cn } from '../lib/utils'
-
-const STEPS: Array<{ id: Step; label: string }> = [
-  { id: 'gender', label: '性别' },
-  { id: 'region', label: '地区' },
-  { id: 'color', label: '上衣' },
-  { id: 'result', label: '配色' },
-]
 
 interface StepIndicatorProps {
   current: Step
   onNavigate: (step: Step) => void
+  canGo: (step: Step) => boolean
 }
 
-export function StepIndicator({ current, onNavigate }: StepIndicatorProps) {
+export function StepIndicator({
+  current,
+  onNavigate,
+  canGo,
+}: StepIndicatorProps) {
   const currentIndex = STEPS.findIndex((step) => step.id === current)
 
   return (
-    <nav aria-label="步骤" className="mb-6 flex items-center gap-2 sm:mb-8 sm:gap-3">
+    <nav
+      aria-label="步骤"
+      className="mb-6 flex items-center gap-1 sm:mb-8 sm:gap-3"
+    >
       {STEPS.map((step, index) => {
         const active = index === currentIndex
         const done = index < currentIndex
-        const enabled = index <= currentIndex
+        const enabled = canGo(step.id)
 
         return (
-          <div key={step.id} className="flex flex-1 items-center gap-2">
+          <div
+            key={step.id}
+            className="flex flex-1 items-center gap-1 sm:gap-2"
+          >
             <button
               type="button"
               disabled={!enabled}
               onClick={() => onNavigate(step.id)}
               aria-current={active ? 'step' : undefined}
               className={cn(
-                'flex items-center gap-1.5 rounded-full px-2 py-1 text-xs transition-colors sm:px-3',
+                'flex items-center gap-1 rounded-full px-1 py-1 text-[11px] transition-colors sm:gap-1.5 sm:px-3 sm:text-xs',
                 active && 'bg-foreground text-background',
                 done && 'text-foreground hover:bg-muted',
                 !active && !done && 'text-muted-foreground',
@@ -41,7 +45,7 @@ export function StepIndicator({ current, onNavigate }: StepIndicatorProps) {
             >
               <span
                 className={cn(
-                  'flex h-5 w-5 items-center justify-center rounded-full border text-[10px]',
+                  'flex h-4 w-4 items-center justify-center rounded-full border text-[10px] sm:h-5 sm:w-5',
                   active && 'border-transparent',
                   done && 'border-transparent bg-muted',
                 )}
