@@ -9,6 +9,14 @@ import {
   type Oklch,
 } from './color'
 import { seasonOf } from './season'
+import {
+  AGE_PROFILES,
+  PROFILE_AMPLITUDE,
+  STYLE_PROFILES,
+  preferenceFor,
+  type AgeBand,
+  type Style,
+} from './profile'
 
 export type Gender = 'male' | 'female'
 
@@ -20,6 +28,8 @@ export interface RecommendationInput {
   month: number
   top: ColorEntry
   season?: Season
+  age?: AgeBand
+  style?: Style
 }
 
 export interface RolePick {
@@ -261,16 +271,28 @@ function scoreColor(
   role: Role,
   season: Season,
   gender: Gender,
+  style: Style,
+  age: AgeBand,
 ): number {
   const candidate = toOklch(color.hex)
   const weights = ROLE_WEIGHTS[role]
-  return (
+  const base =
     weights.harmony * harmonyScore(top, candidate) +
     weights.contrast * contrastScore(top, candidate, role) +
     weights.season * seasonFit(color, season) +
     weights.chroma * chromaScore(candidate, role) +
     weights.gender * genderScore(color, role, gender) +
     weights.anchor * roleAnchor(color, role)
+
+  const styleRow = style === 'any' ? null : STYLE_PROFILES[style]
+  const ageRow = age === 'any' ? null : AGE_PROFILES[age]
+  const stylePreference = preferenceFor(color, candidate, role, top.l, styleRow)
+  const agePreference = preferenceFor(color, candidate, role, top.l, ageRow)
+
+  return (
+    base +
+    PROFILE_AMPLITUDE.style * stylePreference +
+    PROFILE_AMPLITUDE.age * agePreference
   )
 }
 
@@ -280,6 +302,8 @@ function candidatesFor(
   topOklch: Oklch,
   season: Season,
   gender: Gender,
+  style: Style,
+  age: AgeBand,
 ): Scored[] {
   return COLORS.filter(
     (color) => color.id !== top.id && deltaE(top.hex, color.hex) >= 3,
@@ -287,7 +311,7 @@ function candidatesFor(
     .map((color) => ({
       color,
       oklch: toOklch(color.hex),
-      score: scoreColor(topOklch, color, role, season, gender),
+      score: scoreColor(topOklch, color, role, season, gender, style, age),
     }))
     .sort(
       (first, second) =>
@@ -369,12 +393,14 @@ function buildCombos(
   topOklch: Oklch,
   season: Season,
   gender: Gender,
+  style: Style,
+  age: AgeBand,
 ): OutfitCombo[] {
   const pools: Record<Role, Scored[]> = {
-    inner: candidatesFor('inner', top, topOklch, season, gender),
-    pants: candidatesFor('pants', top, topOklch, season, gender),
-    shoes: candidatesFor('shoes', top, topOklch, season, gender),
-    accent: candidatesFor('accent', top, topOklch, season, gender),
+    inner: candidatesFor('inner', top, topOklch, season, gender, style, age),
+    pants: candidatesFor('pants', top, topOklch, season, gender, style, age),
+    shoes: candidatesFor('shoes', top, topOklch, season, gender, style, age),
+    accent: candidatesFor('accent', top, topOklch, season, gender, style, age),
   }
 
   const combos: Array<{ picks: Record<Role, Scored>; score: number }> = []
@@ -436,7 +462,14 @@ function avoidFor(top: ColorEntry): Array<{ color: ColorEntry; reason: string }>
 export function recommend(input: RecommendationInput): Recommendation {
   const season = resolveSeason(input)
   const topOklch = toOklch(input.top.hex)
-  const combos = buildCombos(input.top, topOklch, season, input.gender)
+  const combos = buildCombos(
+    input.top,
+    topOklch,
+    season,
+    input.gender,
+    input.style ?? 'any',
+    input.age ?? 'any',
+  )
   const [primary, ...alternatives] = combos
   const pants = primary.pants.color
   const key = classifyHarmony(input.top.hex, pants.hex)
