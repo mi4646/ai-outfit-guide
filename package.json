@@ -1,0 +1,57 @@
+{
+  "name": "ai-outfit-guide",
+  "private": true,
+  "version": "0.1.0",
+  "description": "按性别、地区与季节，为一件上衣推荐内搭、裤子、鞋与点缀色的配色指南；含可着色人形预览。",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mi4646/ai-outfit-guide.git"
+  },
+  "type": "module",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "keywords": [
+    "outfit",
+    "color",
+    "fashion",
+    "react",
+    "vite",
+    "tailwindcss",
+    "mannequin",
+    "color-harmony"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint src --threads 1",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@radix-ui/react-radio-group": "^1.5.1",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "culori": "^4.0.2",
+    "lucide-react": "^1.71.0",
+    "motion": "^14.12.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "tailwind-merge": "^3.7.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.5",
+    "@types/culori": "^4.0.1",
+    "@types/node": "^24.19.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "oxlint": "^1.90.0",
+    "tailwindcss": "^4.3.5",
+    "typescript": "~7.0.2",
+    "vite": "^8.3.6",
+    "vitest": "^5.1.0"
+  }
+}

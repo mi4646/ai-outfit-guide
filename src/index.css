@@ -1,0 +1,171 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: #f7f5f0;
+  --foreground: #171614;
+  --card: #fffdf8;
+  --card-foreground: #171614;
+  --muted: #ece8df;
+  --muted-foreground: #655f57;
+  --border: #ddd7cb;
+  --ring: #b5432f;
+  --accent: #b5432f;
+  --accent-foreground: #fffaf5;
+  --radius: 1rem;
+  --mannequin-body: #c9b29d;
+  --mannequin-line: #2a2522;
+  --mannequin-placeholder: #e8e0d4;
+  --mannequin-garment-stroke: rgba(23, 22, 20, 0.28);
+}
+
+.dark {
+  --background: #111110;
+  --foreground: #f2efe8;
+  --card: #1a1917;
+  --card-foreground: #f2efe8;
+  --muted: #24221f;
+  --muted-foreground: #a9a39a;
+  --border: #33302b;
+  --ring: #e07a5f;
+  --accent: #e07a5f;
+  --accent-foreground: #1a1210;
+  --mannequin-body: #4a4038;
+  --mannequin-line: #f2efe8;
+  --mannequin-placeholder: #2c2925;
+  --mannequin-garment-stroke: rgba(242, 239, 232, 0.28);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    min-height: 100dvh;
+    margin: 0;
+    background: var(--background);
+    color: var(--foreground);
+    font-family:
+      "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui,
+      -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: var(--accent);
+    color: var(--accent-foreground);
+  }
+}
+
+@layer utilities {
+  .page-glow {
+    background: radial-gradient(
+      60% 100% at 50% 0%,
+      var(--muted) 0%,
+      transparent 72%
+    );
+  }
+
+  .mannequin-body path {
+    fill: var(--mannequin-body);
+    stroke: var(--mannequin-line);
+    stroke-linejoin: round;
+    stroke-opacity: 0.5;
+    stroke-width: 1.2;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .mannequin-shadow {
+    fill: var(--mannequin-line);
+    opacity: 0.12;
+  }
+
+  .dark .mannequin-shadow {
+    fill: #000;
+    opacity: 0.32;
+  }
+
+  .mannequin-region {
+    stroke: var(--mannequin-garment-stroke);
+    stroke-linejoin: round;
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+    transition:
+      fill 200ms ease,
+      stroke 200ms ease,
+      stroke-width 200ms ease;
+  }
+
+  .mannequin-region.is-placeholder {
+    fill: var(--mannequin-placeholder);
+    stroke-dasharray: 5 4;
+  }
+
+  .mannequin-region.is-accent {
+    stroke: var(--mannequin-line);
+    stroke-opacity: 0.32;
+  }
+
+  .mannequin-region.is-active {
+    stroke: var(--ring);
+    stroke-dasharray: none;
+    stroke-width: 2.4;
+  }
+
+  .mannequin-buckle {
+    fill: none;
+    stroke: var(--mannequin-line);
+    stroke-dasharray: none;
+    stroke-opacity: 0.4;
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .mannequin-seam {
+    fill: none;
+    stroke: var(--mannequin-line);
+    stroke-dasharray: none;
+    stroke-opacity: 0.25;
+    stroke-width: 0.8;
+    vector-effect: non-scaling-stroke;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mannequin-region {
+    transition: none;
+  }
+}
