@@ -13,7 +13,9 @@ import { ResultView } from './components/ResultView'
 import { StepIndicator } from './components/StepIndicator'
 import { ThemeToggle } from './components/ThemeToggle'
 import type { ColorEntry } from './data/colors'
+import { getProvince, type Season } from './data/regions'
 import { recommend } from './lib/recommend'
+import { seasonFromMonth, seasonOf } from './lib/season'
 import type { AppState, Step } from './lib/url-state'
 import { canGo, parseState, resolveStep, toSearch } from './lib/url-state'
 
@@ -61,6 +63,16 @@ export default function App() {
     state.age,
     state.style,
   ])
+
+  const panelSeason = useMemo<Season>(() => {
+    if (state.seasonOverride) return state.seasonOverride
+    const province = state.provinceId
+      ? getProvince(state.provinceId)
+      : undefined
+    return province
+      ? seasonOf(province.zone, state.month)
+      : seasonFromMonth(state.month)
+  }, [state.seasonOverride, state.provinceId, state.month])
 
   const combos = recommendation
     ? [recommendation.primary, ...recommendation.alternatives]
@@ -272,6 +284,7 @@ export default function App() {
               >
                 <MannequinPanel
                   gender={state.gender}
+                  season={panelSeason}
                   colors={panelColors}
                   status={panelStatus}
                 />
