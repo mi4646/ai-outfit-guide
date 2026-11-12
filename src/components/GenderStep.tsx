@@ -51,7 +51,7 @@ export function GenderStep({
             <RadioGroupItem
               key={option.value}
               value={option.value}
-              className="group flex min-h-36 flex-col items-start justify-between gap-6 rounded-3xl border border-border bg-background p-5 text-left transition-colors hover:bg-muted data-[state=checked]:border-accent data-[state=checked]:bg-muted"
+              className="group flex min-h-36 flex-col items-start justify-between gap-6 rounded-3xl border border-border bg-background p-5 text-left transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background data-[state=checked]:border-accent data-[state=checked]:bg-muted"
             >
               <span className="flex h-11 w-11 items-center justify-center rounded-full bg-muted text-foreground transition-colors group-data-[state=checked]:bg-accent group-data-[state=checked]:text-accent-foreground">
                 <Shirt className="h-5 w-5" />

@@ -10,6 +10,8 @@ export interface AppState {
   provinceId: string | null
   month: number
   seasonOverride: Season | null
+  /** 结果页解析出的季节快照：写进 URL，保证分享链接复现同一套配色。 */
+  seasonSnapshot: Season | null
   top: ColorEntry | null
   pants: ColorEntry | null
   anchor: AnchorRole | null
@@ -70,6 +72,12 @@ export function parseState(search: string): Partial<AppState> {
       ? (seasonParam as Season)
       : null
 
+  const snapshotParam = params.get('sn')
+  const seasonSnapshot =
+    snapshotParam && SEASONS.includes(snapshotParam as Season)
+      ? (snapshotParam as Season)
+      : null
+
   const ageParam = params.get('a')
   const age: AgeBand = AGE_BANDS.includes(ageParam as AgeBand)
     ? (ageParam as AgeBand)
@@ -99,6 +107,7 @@ export function parseState(search: string): Partial<AppState> {
     provinceId,
     month,
     seasonOverride,
+    seasonSnapshot,
     top,
     pants,
     anchor,
@@ -135,6 +144,8 @@ export function toSearch(state: AppState): string {
   if (state.provinceId) params.set('p', state.provinceId)
   params.set('m', String(state.month))
   if (state.seasonOverride) params.set('s', state.seasonOverride)
+  if (state.seasonSnapshot && !state.seasonOverride)
+    params.set('sn', state.seasonSnapshot)
   if (state.top) params.set('c', state.top.hex.slice(1))
   if (state.pants) params.set('pc', state.pants.hex.slice(1))
   if (state.anchor === 'pants' && state.pants && state.top) {

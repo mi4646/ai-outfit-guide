@@ -55,6 +55,7 @@ const props = (profile: {
   gender: 'female' as const,
   provinceId: 'guangdong',
   lockedPieces: ['top'] as const,
+  month: 7,
   temperature: null,
   onBack: () => {},
   onRegion: () => {},

@@ -30,6 +30,7 @@ const state = (patch = {}) => ({
   provinceId: null,
   month: 7,
   seasonOverride: null,
+  seasonSnapshot: null,
   top: null,
   pants: null,
   anchor: null,
@@ -92,6 +93,18 @@ describe('parseState / toSearch', () => {
     expect(parseState('?p=nowhere').provinceId).toBeNull()
     expect(parseState('?p=guangdong').provinceId).toBe('guangdong')
     expect(parseState('?p=overseas').provinceId).toBe('overseas')
+  })
+
+  it('round-trips a season snapshot but drops a bad one', () => {
+    expect(parseState('?sn=winter').seasonSnapshot).toBe('winter')
+    expect(parseState('?sn=monsoon').seasonSnapshot).toBeNull()
+    const url = toSearch({ ...state({ seasonSnapshot: 'autumn' }) })
+    expect(url).toContain('sn=autumn')
+    const manual = toSearch({
+      ...state({ seasonOverride: 'winter', seasonSnapshot: 'autumn' }),
+    })
+    expect(manual).toContain('s=winter')
+    expect(manual).not.toContain('sn=')
   })
 
   it('omits any from the URL', () => {

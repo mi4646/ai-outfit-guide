@@ -1,5 +1,5 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ColorStep } from './components/ColorStep'
 import { GenderStep } from './components/GenderStep'
 import { ProfileStep } from './components/ProfileStep'
@@ -40,6 +40,7 @@ function initialState(): AppState {
     provinceId: parsed.provinceId ?? null,
     month,
     seasonOverride: parsed.seasonOverride ?? null,
+    seasonSnapshot: parsed.seasonSnapshot ?? null,
     top: parsed.top ?? null,
     pants: parsed.pants ?? null,
     anchor: parsed.anchor ?? null,
@@ -64,6 +65,18 @@ export default function App() {
   })
   const [weatherAttempt, setWeatherAttempt] = useState(0)
   const reduceMotion = useReducedMotion()
+  const mainRef = useRef<HTMLElement>(null)
+  const firstRender = useRef(true)
+
+  // 换步后回到顶部并把焦点交给主内容，否则手机停在长网格中段、读屏也没有换屏信号。
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false
+      return
+    }
+    window.scrollTo(0, 0)
+    mainRef.current?.focus({ preventScroll: true })
+  }, [state.step])
 
   const coords = useMemo(() => {
     if (geoCoords) return geoCoords
@@ -106,9 +119,11 @@ export default function App() {
     return seasonFromMonth(state.month)
   }, [coords, state.provinceId, state.month])
 
-  const autoSeason = currentWeather.reading
-    ? seasonFromTemperature(currentWeather.reading.apparentC, calendarSeason)
-    : calendarSeason
+  const autoSeason =
+    state.seasonSnapshot ??
+    (currentWeather.reading
+      ? seasonFromTemperature(currentWeather.reading.apparentC, calendarSeason)
+      : calendarSeason)
   const panelSeason = state.seasonOverride ?? autoSeason
 
   const anchor = resolveAnchor(state)
@@ -177,6 +192,21 @@ export default function App() {
     role === 'top' ? state.top : state.pants,
   )
 
+  // 进入结果页时把已解析的季节写进 URL；之后分享或刷新都得到同一套配色。
+  // 气温还在路上时先不写，避免把「加载中」的临时季节钉死。
+  useEffect(() => {
+    if (state.step !== 'result' || state.seasonOverride) return
+    if (currentWeather.status === 'loading') return
+    if (state.seasonSnapshot === autoSeason) return
+    setState((previous) => ({ ...previous, seasonSnapshot: autoSeason }))
+  }, [
+    state.step,
+    state.seasonOverride,
+    state.seasonSnapshot,
+    autoSeason,
+    currentWeather.status,
+  ])
+
   useEffect(() => {
     const url = `${window.location.pathname}${toSearch(state)}`
     window.history.replaceState(null, '', url)
@@ -215,6 +245,7 @@ export default function App() {
       provinceId: null,
       month: currentMonth(),
       seasonOverride: null,
+      seasonSnapshot: null,
       top: null,
       pants: null,
       anchor: null,
@@ -265,15 +296,15 @@ export default function App() {
           onProvince={(provinceId, coords) => {
             resetCombos()
             setGeoCoords(coords ?? null)
-            update({ provinceId, seasonOverride: null })
+            update({ provinceId, seasonOverride: null, seasonSnapshot: null })
           }}
           onSeason={(season) => {
             resetCombos()
-            update({ seasonOverride: season })
+            update({ seasonOverride: season, seasonSnapshot: null })
           }}
           onAutoSeason={() => {
             resetCombos()
-            update({ seasonOverride: null })
+            update({ seasonOverride: null, seasonSnapshot: null })
           }}
           onNext={() => update({ step: 'color' })}
           onBack={() => navigate('gender')}
@@ -334,6 +365,7 @@ export default function App() {
           age={state.age}
           style={state.style}
           lockedPieces={lockedPieces}
+          month={state.month}
           temperature={currentWeather.reading?.temperatureC ?? null}
           onBack={() => update({ step: 'color' })}
           onRegion={() => update({ step: 'region' })}
@@ -389,6 +421,7 @@ export default function App() {
         </header>
 
         <main
+          ref={mainRef}
           id="main"
           tabIndex={-1}
           className="flex-1 px-4 pb-10 outline-none sm:px-6"

@@ -77,6 +77,7 @@ interface ResultViewProps {
   age: AgeBand
   style: Style
   lockedPieces: ReadonlyArray<'top' | 'pants'>
+  month: number
   temperature: number | null
   onBack: () => void
   onRegion: () => void
@@ -95,6 +96,7 @@ export function ResultView({
   age,
   style,
   lockedPieces,
+  month,
   temperature,
   onBack,
   onRegion,
@@ -119,8 +121,10 @@ export function ResultView({
         <CardContent className="space-y-5">
           <div className="flex flex-wrap gap-2">
             <Badge variant="accent">{result.seasonLabel}</Badge>
-            {temperature !== null && (
+            {temperature !== null ? (
               <Badge variant="outline">实时 {Math.round(temperature)}°C</Badge>
+            ) : (
+              <Badge variant="outline">按 {month} 月估算</Badge>
             )}
             <Badge variant="outline">{provinceName}</Badge>
             <Badge variant="outline">{GENDER_LABELS[gender]}</Badge>

@@ -55,7 +55,7 @@ export function MannequinPanel({
       onRegionChange={setActiveRegion}
       className={cn(
         'w-auto shrink-0 lg:mx-auto lg:h-[420px]',
-        compact ? 'h-[132px] sm:h-[200px]' : 'h-[280px]',
+        compact ? 'h-[132px] sm:h-[200px]' : 'h-[240px] min-[360px]:h-[280px]',
       )}
     />
   )
@@ -84,7 +84,9 @@ export function MannequinPanel({
             aria-label={`${SEASON_LABELS[season]}季人形轮廓：${summary}`}
             className={cn(
               'min-w-0 shrink-0 overflow-hidden lg:mx-auto lg:h-[420px] lg:w-[194px]',
-              compact ? 'h-[132px] w-[64px] sm:h-[200px] sm:w-[92px]' : 'h-[280px] w-[129px]',
+              compact
+                ? 'h-[132px] w-[64px] sm:h-[200px] sm:w-[92px]'
+                : 'h-[240px] w-[110px] min-[360px]:h-[280px] min-[360px]:w-[129px]',
             )}
           >
             <Suspense fallback={fallback}>
@@ -145,7 +147,7 @@ export function MannequinPanel({
                     aria-hidden="true"
                   />
                 )}
-                <span className="w-7 shrink-0 text-muted-foreground lg:w-8">
+                <span className="w-6 shrink-0 text-muted-foreground min-[360px]:w-7 lg:w-8">
                   {REGION_LABELS[region]}
                 </span>
                 <span className="min-w-0 flex-1 truncate font-medium">
