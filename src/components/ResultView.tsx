@@ -134,12 +134,7 @@ export function ResultView({
           </div>
 
           <div>
-            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-              Your palette
-            </p>
-            <h2 className="mt-1 text-2xl font-semibold tracking-tight">
-              你的今日配色
-            </h2>
+            <h2 className="text-2xl font-semibold tracking-tight">你的今日配色</h2>
             <p className="mt-2 max-w-prose text-sm leading-6 text-muted-foreground">
               {HARMONY_DESCRIPTIONS[harmonyKey]}
             </p>

@@ -428,7 +428,7 @@ export function Figure({
       const color = colors[region]
       material.color.set(color?.hex ?? theme.placeholder)
       material.transparent = !color
-      material.opacity = color ? 1 : 0.52
+      material.opacity = color ? 1 : 0.6
       material.depthWrite = Boolean(color)
       material.needsUpdate = true
     }

@@ -42,6 +42,7 @@ export function GenderStep({
         </div>
 
         <RadioGroup
+          aria-label="性别"
           value={value ?? ''}
           onValueChange={(next) => onSelect(next as Gender)}
           className="grid gap-3 sm:grid-cols-2"

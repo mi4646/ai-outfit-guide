@@ -247,7 +247,7 @@ export default function App() {
       return (
         <GenderStep
           value={state.gender}
-          onSelect={(gender) => update({ gender, step: 'region' })}
+          onSelect={(gender) => update({ gender })}
           onNext={() => navigate('region')}
           onBack={() => navigate('profile')}
         />
@@ -345,7 +345,7 @@ export default function App() {
     return (
       <GenderStep
         value={state.gender}
-        onSelect={(gender) => update({ gender, step: 'region' })}
+        onSelect={(gender) => update({ gender })}
         onNext={() => navigate('region')}
         onBack={() => navigate('profile')}
       />
@@ -388,7 +388,11 @@ export default function App() {
           <ThemeToggle />
         </header>
 
-        <main id="main" className="flex-1 px-4 pb-10 sm:px-6">
+        <main
+          id="main"
+          tabIndex={-1}
+          className="flex-1 px-4 pb-10 outline-none sm:px-6"
+        >
           <StepIndicator
             current={state.step}
             onNavigate={navigate}

@@ -10,7 +10,7 @@ colors:
   border: "#ddd7cb"
   vermilion: "#b5432f"
   vermilion-ink: "#fffaf5"
-  mannequin-skin: "#d8b49c"
+  mannequin-skin: "#c9b29d"
   mannequin-line: "#2a2522"
   brand-ochre: "#c99a2e"
   brand-navy: "#1f2a44"
@@ -134,7 +134,9 @@ A warm neutral paper world with one vermilion voice. The mannequin skin is a neu
 
 The 3D figure reads `--mannequin-body`, `--mannequin-placeholder`, `--mannequin-line` and `--ring` at runtime and re-reads them when the theme class changes, so the 3D body and the SVG fallback stay the same object in both themes.
 
-Dark theme mirrors the same roles with **Night Paper** (#111110), **Night Sheet** (#1a1917), **Night Wash** (#24221f), **Night Muted Ink** (#a9a39a), **Night Rule** (#33302b), **Night Ink** (#f2efe8), **Night Vermilion** (#e07a5f), and **Night Skin** (#4a4038). The accent lightens because the same vermilion cannot clear AA as text on a dark ground.
+Dark theme mirrors the same roles with **Night Paper** (#111110), **Night Sheet** (#1a1917), **Night Wash** (#24221f), **Night Muted Ink** (#a9a39a), **Night Rule** (#33302b), **Night Ink** (#f2efe8), **Night Vermilion** (#e07a5f), **Night Skin** (#7a6a58, 3.4:1 against Night Sheet), and **Night Placeholder** (#6f695f). The accent lightens because the same vermilion cannot clear AA as text on a dark ground; the skin and the uncolored shell lighten for the same reason — the figure must stay a silhouette on a dark sheet.
+
+**The Silhouette Rule.** The body and the uncolored garment shell are the only things separating a bare mannequin from the card behind it. On Night Sheet the body clears 3:1 on its lit edge and the shell stays visible at 0.6 opacity over it; on paper the body stays darker than the sheet (2:1) and the studio shading plus the SVG fallback's ink line carry the edge. If a 3D material cannot be seen against the sheet, the theme's token is wrong, not the figure.
 
 **The One Vermilion Rule.** Vermilion covers at most 10% of any screen. Its rarity is what makes the result badge and the active region readable.
 

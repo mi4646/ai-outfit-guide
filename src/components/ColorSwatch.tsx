@@ -44,7 +44,7 @@ export function ColorOption({ color, className, ...props }: ColorOptionProps) {
       aria-label={`${color.name} ${color.hex}`}
       title={`${color.name} ${color.hex}`}
       className={cn(
-        'group flex h-11 w-11 items-center justify-center rounded-full border border-black/10 shadow-sm transition-transform hover:scale-105 data-[state=checked]:ring-2 data-[state=checked]:ring-ring data-[state=checked]:ring-offset-2 data-[state=checked]:ring-offset-background dark:border-white/15',
+        'group flex h-11 w-11 items-center justify-center rounded-full border border-black/10 shadow-sm transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background data-[state=checked]:ring-2 data-[state=checked]:ring-ring data-[state=checked]:ring-offset-2 data-[state=checked]:ring-offset-background dark:border-white/15',
         className,
       )}
       style={{ backgroundColor: color.hex, color: text }}
