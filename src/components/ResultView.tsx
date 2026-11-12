@@ -1,3 +1,4 @@
+import { RefreshCw } from 'lucide-react'
 import type { ColorEntry } from '../data/colors'
 import { getProvince } from '../data/regions'
 import { classifyHarmony } from '../lib/color'
@@ -61,6 +62,9 @@ interface ResultViewProps {
   recommendation: Recommendation
   activeCombo: number
   onActiveComboChange: (index: number) => void
+  batchCount: number
+  variant: number
+  onSwap: () => void
   gender: Gender
   provinceId: string
   age: AgeBand
@@ -75,6 +79,9 @@ export function ResultView({
   recommendation,
   activeCombo,
   onActiveComboChange,
+  batchCount,
+  variant,
+  onSwap,
   gender,
   provinceId,
   age,
@@ -171,10 +178,17 @@ export function ResultView({
         <Card>
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between gap-2">
-              <h3 className="text-sm font-semibold">换一套</h3>
-              <span className="text-xs text-muted-foreground">
-                共 {combos.length} 套
-              </span>
+              <h3 className="text-sm font-semibold">备选方案</h3>
+              <Button
+                type="button"
+                variant="accent"
+                size="sm"
+                onClick={onSwap}
+                aria-label={`换一套方案（第 ${variant + 1} 组，共 ${batchCount} 组）`}
+              >
+                <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+                换一套
+              </Button>
             </div>
             <div className="grid gap-2">
               {combos.map((item, index) => (

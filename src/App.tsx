@@ -50,6 +50,7 @@ function initialState(): AppState {
 export default function App() {
   const [state, setState] = useState<AppState>(initialState)
   const [activeCombo, setActiveCombo] = useState(0)
+  const [variant, setVariant] = useState(0)
   const [geoCoords, setGeoCoords] = useState<{
     lat: number
     lon: number
@@ -116,7 +117,9 @@ export default function App() {
     const anchorColor = anchor === 'top' ? state.top : state.pants
     if (anchorColor) pieces.push({ role: anchor, color: anchorColor })
     const other = anchor === 'top' ? state.pants : state.top
-    if (other) pieces.push({ role: anchor === 'top' ? 'pants' : 'top', color: other })
+    // 换一套时只保留锚点，另一件已选单品也参与重配。
+    if (other && variant === 0)
+      pieces.push({ role: anchor === 'top' ? 'pants' : 'top', color: other })
 
     return recommend({
       gender: state.gender,
@@ -126,6 +129,7 @@ export default function App() {
       season: panelSeason,
       age: state.age,
       style: state.style,
+      variant,
     })
   }, [
     state.gender,
@@ -137,6 +141,7 @@ export default function App() {
     panelSeason,
     state.age,
     state.style,
+    variant,
   ])
 
   const combos = recommendation
@@ -178,8 +183,19 @@ export default function App() {
     if (canGo(state, step)) update({ step })
   }
 
-  function reset() {
+  function resetCombos() {
     setActiveCombo(0)
+    setVariant(0)
+  }
+
+  function swapBatch() {
+    if (!recommendation) return
+    setVariant((current) => (current + 1) % recommendation.batchCount)
+    setActiveCombo(0)
+  }
+
+  function reset() {
+    resetCombos()
     setGeoCoords(null)
     setState({
       gender: null,
@@ -202,11 +218,11 @@ export default function App() {
           age={state.age}
           style={state.style}
           onAge={(age) => {
-            setActiveCombo(0)
+            resetCombos()
             update({ age })
           }}
           onStyle={(style) => {
-            setActiveCombo(0)
+            resetCombos()
             update({ style })
           }}
           onNext={() => update({ step: 'gender' })}
@@ -234,16 +250,16 @@ export default function App() {
           autoSeason={state.provinceId ? autoSeason : null}
           weather={currentWeather}
           onProvince={(provinceId, coords) => {
-            setActiveCombo(0)
+            resetCombos()
             setGeoCoords(coords ?? null)
             update({ provinceId, seasonOverride: null })
           }}
           onSeason={(season) => {
-            setActiveCombo(0)
+            resetCombos()
             update({ seasonOverride: season })
           }}
           onAutoSeason={() => {
-            setActiveCombo(0)
+            resetCombos()
             update({ seasonOverride: null })
           }}
           onNext={() => update({ step: 'color' })}
@@ -259,11 +275,11 @@ export default function App() {
           top={state.top}
           pants={state.pants}
           onAnchor={(anchor) => {
-            setActiveCombo(0)
+            resetCombos()
             update({ anchor })
           }}
           onSelect={(role, color) => {
-            setActiveCombo(0)
+            resetCombos()
             update(
               role === 'top'
                 ? { top: color, anchor: state.anchor ?? role }
@@ -272,7 +288,7 @@ export default function App() {
           }}
           onClear={(role) => {
             const otherColor = role === 'top' ? state.pants : state.top
-            setActiveCombo(0)
+            resetCombos()
             update(
               role === 'top'
                 ? { top: null, anchor: otherColor ? 'pants' : state.anchor }
@@ -296,6 +312,9 @@ export default function App() {
           recommendation={recommendation}
           activeCombo={activeCombo}
           onActiveComboChange={setActiveCombo}
+          batchCount={recommendation.batchCount}
+          variant={variant}
+          onSwap={swapBatch}
           gender={state.gender}
           provinceId={state.provinceId}
           age={state.age}

@@ -463,3 +463,67 @@ describe('anchor model', () => {
     expect(recommend(input)).toEqual(recommend(input))
   })
 })
+
+describe('batch variants', () => {
+  const base = {
+    gender: 'female' as const,
+    provinceId: 'guangdong',
+    month: 7,
+    pieces: [topPiece(BLACK)],
+  }
+
+  const comboKeys = (result: Recommendation) => {
+    const roles: Role[] = ['inner', 'top', 'pants', 'shoes', 'accent']
+    return [result.primary, ...result.alternatives].map((combo) =>
+      roles.map((role) => combo[role].color.id).join('|'),
+    )
+  }
+
+  it('defaults to the same first batch as variant 0', () => {
+    expect(signature(recommend(base))).toEqual(
+      signature(recommend({ ...base, variant: 0 })),
+    )
+  })
+
+  it('returns three unseen outfits in the next batch', () => {
+    const first = new Set(comboKeys(recommend(base)))
+    const second = comboKeys(recommend({ ...base, variant: 1 }))
+
+    expect(second).toHaveLength(3)
+    for (const key of second) expect(first.has(key)).toBe(false)
+  })
+
+  it('reports how many batches are available', () => {
+    const { batchCount } = recommend(base)
+
+    expect(batchCount).toBeGreaterThanOrEqual(2)
+    expect(batchCount).toBeLessThanOrEqual(4)
+  })
+
+  it('returns a full batch for every valid variant', () => {
+    const { batchCount } = recommend(base)
+
+    for (let variant = 0; variant < batchCount; variant++) {
+      expect(comboKeys(recommend({ ...base, variant }))).toHaveLength(3)
+    }
+  })
+
+  it('keeps the anchor in every batch', () => {
+    const { batchCount } = recommend(base)
+
+    for (let variant = 0; variant < batchCount; variant++) {
+      const result = recommend({ ...base, variant })
+      for (const combo of [result.primary, ...result.alternatives]) {
+        expect(combo.top.color.id).toBe(BLACK.id)
+      }
+    }
+  })
+
+  it('clamps an out-of-range variant to the last batch', () => {
+    const { batchCount } = recommend(base)
+
+    expect(comboKeys(recommend({ ...base, variant: batchCount + 5 }))).toEqual(
+      comboKeys(recommend({ ...base, variant: batchCount - 1 })),
+    )
+  })
+})

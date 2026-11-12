@@ -38,6 +38,8 @@ export interface RecommendationInput {
   season?: Season
   age?: AgeBand
   style?: Style
+  /** 第几批备选（从 0 开始）。越界时钳到末批。 */
+  variant?: number
 }
 
 export interface RolePick {
@@ -62,6 +64,8 @@ export interface Recommendation {
   pants: ColorEntry
   primary: OutfitCombo
   alternatives: OutfitCombo[]
+  /** 可切换的完整批次数，至少为 1。 */
+  batchCount: number
   avoid: Array<{ color: ColorEntry; reason: string }>
   harmony: { key: HarmonyKey; label: string; description: string }
   anchorRole: AnchorRole
@@ -473,7 +477,11 @@ function buildCombos(
   gender: Gender,
   style: Style,
   age: AgeBand,
-): OutfitCombo[] {
+  variant: number,
+): { combos: OutfitCombo[]; batchCount: number } {
+  const BATCH_SIZE = 3
+  const MAX_BATCHES = 4
+  const wanted = BATCH_SIZE * MAX_BATCHES
   const freeRoles = ROLES.filter((role) => !fixedByRole[role])
   const pools = {} as Record<Role, Scored[]>
   for (const role of ROLES) {
@@ -503,7 +511,7 @@ function buildCombos(
     anchor.role === 'pants' && !fixedByRole.top ? 'top' : null
   const chosen: typeof combos = []
   for (const combo of combos) {
-    if (chosen.length >= 3) break
+    if (chosen.length >= wanted) break
     const repeatsTooMany = chosen.some(
       (picked) =>
         freeRoles.filter(
@@ -520,11 +528,20 @@ function buildCombos(
     if (!repeatsTooMany && !partnerRepeats) chosen.push(combo)
   }
   for (const combo of combos) {
-    if (chosen.length >= 3) break
+    if (chosen.length >= wanted) break
     if (!chosen.includes(combo)) chosen.push(combo)
   }
 
-  return chosen.map(({ picks }) => toCombo(picks, anchor, season, fixedByRole))
+  const batchCount = Math.max(1, Math.floor(chosen.length / BATCH_SIZE))
+  const safeVariant = Math.min(Math.max(0, variant), batchCount - 1)
+  const start = safeVariant * BATCH_SIZE
+
+  return {
+    combos: chosen
+      .slice(start, start + BATCH_SIZE)
+      .map(({ picks }) => toCombo(picks, anchor, season, fixedByRole)),
+    batchCount,
+  }
 }
 
 function avoidFor(
@@ -586,7 +603,7 @@ export function recommend(input: RecommendationInput): Recommendation {
     color: anchorPiece.color,
     oklch: toOklch(anchorPiece.color.hex),
   }
-  const combos = buildCombos(
+  const { combos, batchCount } = buildCombos(
     fixedByRole,
     fixed,
     anchor,
@@ -594,6 +611,7 @@ export function recommend(input: RecommendationInput): Recommendation {
     input.gender,
     input.style ?? 'any',
     input.age ?? 'any',
+    input.variant ?? 0,
   )
   const [primary, ...alternatives] = combos
   const top = primary.top.color
@@ -607,6 +625,7 @@ export function recommend(input: RecommendationInput): Recommendation {
     pants,
     primary,
     alternatives,
+    batchCount,
     avoid: avoidFor(
       input.pieces[0].color,
       input.pieces[0].role,
