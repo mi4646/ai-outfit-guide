@@ -56,7 +56,7 @@ function ColorPicker({ value, colors, label, onSelect }: ColorPickerProps) {
   return (
     <div className="space-y-3">
       <div className="flex justify-end">
-        <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-border px-3 py-1.5 text-xs transition-colors hover:bg-muted">
+        <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-border px-3 text-xs transition-colors hover:bg-muted">
           <input
             type="color"
             value={customHex}

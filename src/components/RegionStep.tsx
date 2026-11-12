@@ -181,7 +181,7 @@ export function RegionStep({
                 <button
                   type="button"
                   onClick={onRetryWeather}
-                  className="rounded-full border border-border px-2.5 py-1 text-[11px] hover:bg-muted"
+                  className="inline-flex min-h-11 items-center rounded-full border border-border px-2.5 text-[11px] hover:bg-muted"
                 >
                   重试
                 </button>
@@ -209,7 +209,7 @@ export function RegionStep({
               <button
                 type="button"
                 onClick={onAutoSeason}
-                className="text-xs text-accent underline-offset-4 hover:underline"
+                className="inline-flex min-h-11 items-center text-xs text-accent underline-offset-4 hover:underline"
               >
                 恢复自动（{SEASON_OPTIONS.find((item) => item.value === autoSeason)?.label}）
               </button>

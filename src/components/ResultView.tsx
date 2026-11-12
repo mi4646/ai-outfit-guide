@@ -111,7 +111,10 @@ export function ResultView({
   const note = profileNote(age, style)
 
   return (
-    <div className="space-y-4" aria-live="polite">
+    <div className="space-y-4">
+      <p className="sr-only" role="status">
+        第 {variant + 1} 组 · {activeCombo === 0 ? '主方案' : `方案 ${activeCombo + 1}`}
+      </p>
       <Card>
         <CardContent className="space-y-5">
           <div className="flex flex-wrap gap-2">

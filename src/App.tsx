@@ -16,6 +16,7 @@ import type { ColorEntry } from './data/colors'
 import { getProvince, type Season } from './data/regions'
 import { recommend, type Piece } from './lib/recommend'
 import { locate, seasonFromMonth, seasonFromTemperature, seasonOf } from './lib/season'
+import { BRAND_STRIP_COLORS } from './lib/brand'
 import { cn } from './lib/utils'
 import type { AppState, Step } from './lib/url-state'
 import {
@@ -353,6 +354,12 @@ export default function App() {
 
   return (
     <div className="min-h-dvh">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-foreground focus:px-4 focus:py-2 focus:text-sm focus:text-background"
+      >
+        跳到主内容
+      </a>
       <div
         aria-hidden="true"
         className="page-glow pointer-events-none fixed inset-x-0 top-0 -z-10 h-72"
@@ -361,7 +368,7 @@ export default function App() {
         <header className="flex items-center justify-between gap-4 px-4 py-5 sm:px-6">
           <div className="flex items-center gap-3">
             <span className="flex -space-x-1.5" aria-hidden="true">
-              {['#b5432f', '#c99a2e', '#1f2a44', '#f6f1e7'].map((hex) => (
+              {BRAND_STRIP_COLORS.map((hex) => (
                 <span
                   key={hex}
                   className="h-4 w-4 rounded-full ring-1 ring-black/10 dark:ring-white/15"
@@ -381,7 +388,7 @@ export default function App() {
           <ThemeToggle />
         </header>
 
-        <main className="flex-1 px-4 pb-10 sm:px-6">
+        <main id="main" className="flex-1 px-4 pb-10 sm:px-6">
           <StepIndicator
             current={state.step}
             onNavigate={navigate}
@@ -392,6 +399,25 @@ export default function App() {
           state.step !== 'gender' &&
           state.gender ? (
             <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_300px]">
+              <motion.div
+                initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                className={cn(
+                  // DOM 在前，手机上视觉与焦点顺序一致；桌面靠 order 排到右栏。
+                  'self-start lg:order-last lg:sticky lg:top-6',
+                  // 结果前的步骤：手机上收成吸顶条，选色时颜色一直看得见。
+                  state.step !== 'result' && 'max-lg:sticky max-lg:top-0 max-lg:z-20',
+                )}
+              >
+                <MannequinPanel
+                  gender={state.gender}
+                  season={panelSeason}
+                  colors={panelColors}
+                  status={panelStatus}
+                />
+              </motion.div>
+
               <AnimatePresence mode="wait" initial={false}>
                 <motion.div
                   key={state.step}
@@ -404,24 +430,6 @@ export default function App() {
                   {renderStep()}
                 </motion.div>
               </AnimatePresence>
-
-              <motion.div
-                initial={reduceMotion ? false : { opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2, ease: 'easeOut' }}
-                className={cn(
-                  'order-first self-start lg:order-last lg:sticky lg:top-6',
-                  // 结果前的步骤：手机上收成吸顶条，选色时颜色一直看得见。
-                  state.step !== 'result' && 'max-lg:sticky max-lg:top-0 max-lg:z-20',
-                )}
-              >
-                <MannequinPanel
-                  gender={state.gender}
-                  season={panelSeason}
-                  colors={panelColors}
-                  status={panelStatus}
-                />
-              </motion.div>
             </div>
           ) : (
             <AnimatePresence mode="wait" initial={false}>

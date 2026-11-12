@@ -1,5 +1,5 @@
 import { useThree, type ThreeEvent } from '@react-three/fiber'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import * as THREE from 'three'
 import type { ColorEntry } from '../../data/colors'
 import type { Season } from '../../data/regions'
@@ -10,7 +10,47 @@ import { sceneFor, type OutfitSpec } from './scene'
 type Vec3 = readonly [number, number, number?]
 
 const PLACEHOLDER = '#b9b0a3'
-const ACTIVE_COLOR = '#b5432f'
+
+interface ThemeColors {
+  body: string
+  placeholder: string
+  line: string
+  accent: string
+}
+
+const LIGHT_THEME: ThemeColors = {
+  body: '#d8b49c',
+  placeholder: '#b9b0a3',
+  line: '#2a2522',
+  accent: '#b5432f',
+}
+
+function readThemeColors(): ThemeColors {
+  if (typeof document === 'undefined') return LIGHT_THEME
+  const cs = getComputedStyle(document.documentElement)
+  const read = (name: string, fallback: string) =>
+    cs.getPropertyValue(name).trim() || fallback
+  return {
+    body: read('--mannequin-body', LIGHT_THEME.body),
+    placeholder: read('--mannequin-placeholder', LIGHT_THEME.placeholder),
+    line: read('--mannequin-line', LIGHT_THEME.line),
+    accent: read('--ring', LIGHT_THEME.accent),
+  }
+}
+
+function useThemeColors(): ThemeColors {
+  const [theme, setTheme] = useState<ThemeColors>(readThemeColors)
+  useEffect(() => {
+    // 主题切换只改 <html class>，材质要跟着 CSS 变量走。
+    const observer = new MutationObserver(() => setTheme(readThemeColors()))
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    })
+    return () => observer.disconnect()
+  }, [])
+  return theme
+}
 
 export interface FigureProps {
   gender: Gender
@@ -372,6 +412,7 @@ export function Figure({
 }: FigureProps) {
   const invalidate = useThree((state) => state.invalidate)
   const gl = useThree((state) => state.gl)
+  const theme = useThemeColors()
   const spec = useMemo(() => sceneFor(gender, season), [gender, season])
   const materials = useMemo(() => createMaterials(), [])
   const group = useMemo(
@@ -380,27 +421,29 @@ export function Figure({
   )
 
   useEffect(() => {
+    materials.body.color.set(theme.body)
+    materials.seam.color.set(theme.line)
     for (const region of REGIONS) {
       const material = materials[region]
       const color = colors[region]
-      material.color.set(color?.hex ?? PLACEHOLDER)
+      material.color.set(color?.hex ?? theme.placeholder)
       material.transparent = !color
       material.opacity = color ? 1 : 0.52
       material.depthWrite = Boolean(color)
       material.needsUpdate = true
     }
     invalidate()
-  }, [colors, materials, invalidate])
+  }, [colors, materials, theme, invalidate])
 
   useEffect(() => {
     for (const region of REGIONS) {
       const material = materials[region]
       const active = region === activeRegion
-      material.emissive.set(active ? ACTIVE_COLOR : '#000000')
+      material.emissive.set(active ? theme.accent : '#000000')
       material.emissiveIntensity = active ? 0.35 : 0
     }
     invalidate()
-  }, [activeRegion, materials, invalidate])
+  }, [activeRegion, materials, theme, invalidate])
 
   useEffect(() => {
     if (typeof window === 'undefined') return

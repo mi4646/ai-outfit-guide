@@ -12,6 +12,9 @@ colors:
   vermilion-ink: "#fffaf5"
   mannequin-skin: "#d8b49c"
   mannequin-line: "#2a2522"
+  brand-ochre: "#c99a2e"
+  brand-navy: "#1f2a44"
+  brand-cream: "#f6f1e7"
 typography:
   display:
     fontFamily: "PingFang SC, Hiragino Sans GB, Microsoft YaHei, system-ui, -apple-system, Segoe UI, sans-serif"
@@ -126,6 +129,11 @@ A warm neutral paper world with one vermilion voice. The mannequin skin is a neu
 - **Mannequin Skin** (#d8b49c): the 3D body material; a warm neutral, not a color region.
 - **Mannequin Line** (#2a2522): the SVG fallback's ink line.
 
+### Brand Strip
+- **Brand Ochre** (#c99a2e), **Brand Navy** (#1f2a44), **Brand Cream** (#f6f1e7): the four-dot strip in the header and step one, together with Vermilion. They live in `src/lib/brand.ts` and appear nowhere else; they are identity marks, not palette colors.
+
+The 3D figure reads `--mannequin-body`, `--mannequin-placeholder`, `--mannequin-line` and `--ring` at runtime and re-reads them when the theme class changes, so the 3D body and the SVG fallback stay the same object in both themes.
+
 Dark theme mirrors the same roles with **Night Paper** (#111110), **Night Sheet** (#1a1917), **Night Wash** (#24221f), **Night Muted Ink** (#a9a39a), **Night Rule** (#33302b), **Night Ink** (#f2efe8), **Night Vermilion** (#e07a5f), and **Night Skin** (#4a4038). The accent lightens because the same vermilion cannot clear AA as text on a dark ground.
 
 **The One Vermilion Rule.** Vermilion covers at most 10% of any screen. Its rarity is what makes the result badge and the active region readable.
@@ -154,9 +162,9 @@ Dark theme mirrors the same roles with **Night Paper** (#111110), **Night Sheet*
 
 A single centered column capped at **1024px** (`max-w-5xl`), with 16px page gutters and 24px section rhythm. The step indicator runs across the top as five equal cells separated by 1px rules.
 
-From `lg` (1024px) the task and the preview split into a two-column grid: the form takes the remaining width, the preview card is a fixed **300px** sticky column at the top. Below `lg` the preview sits above the form as a **compact sticky strip**: a **64×132** figure beside the five-region legend in two columns of 44px rows, stuck to the top of the viewport while the form scrolls under it. The result step is the exception: there the panel returns to the full card with the **129×280** figure and the legend in one column. On desktop the compact steps keep the full **194×420** figure with the legend below it.
+From `lg` (1024px) the task and the preview split into a two-column grid: the form takes the remaining width, the preview card is a fixed **300px** sticky column at the top. Below `lg` the preview sits above the form as a **compact sticky strip**: a **64×132** figure beside the five-region legend in two columns of 44px rows (one column below 360px), stuck to the top of the viewport while the form scrolls under it. The result step is the exception: there the panel returns to the full card with the **129×280** figure and the legend in one column. On desktop the compact steps keep the full **194×420** figure with the legend below it.
 
-**The Compact Preview Rule.** Before the result, the preview may not take more than ~200px of a phone viewport; it must stay stuck to the top while the color grid scrolls, because the point of the panel is watching a color land on the figure, and that has to happen at the moment of choosing.
+**The Compact Preview Rule.** Before the result, the preview may not take more than ~280px of a phone viewport (about 200px above 360px wide); it must stay stuck to the top while the color grid scrolls, because the point of the panel is watching a color land on the figure, and that has to happen at the moment of choosing.
 
 **The Preview First Rule.** On mobile the body is the first thing after the step indicator. The user must see the color landing on a figure before scrolling into the form.
 

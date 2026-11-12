@@ -107,7 +107,7 @@ export function MannequinPanel({
           className={cn(
             'min-w-0 flex-1 lg:mt-4',
             compact
-              ? 'grid grid-cols-2 gap-x-2 lg:block lg:space-y-0.5'
+              ? 'grid grid-cols-1 gap-x-2 min-[360px]:grid-cols-2 lg:block lg:space-y-0.5'
               : 'space-y-0.5',
           )}
         >

@@ -1,4 +1,5 @@
 import { useId } from 'react'
+import { BRAND_STRIP_COLORS } from '../lib/brand'
 import {
   AGE_BANDS,
   AGE_LABELS,
@@ -19,8 +20,6 @@ import {
   CardTitle,
 } from './ui/card'
 import { RadioGroup, RadioGroupItem } from './ui/radio-group'
-
-const STRIP_COLORS = ['#b5432f', '#c99a2e', '#1f2a44', '#f6f1e7'] as const
 
 interface OptionGroupProps<T extends string> {
   label: string
@@ -97,7 +96,7 @@ export function ProfileStep({
       <CardContent className="space-y-6">
         <div className="space-y-2">
           <div aria-hidden="true" className="flex gap-1.5">
-            {STRIP_COLORS.map((hex) => (
+            {BRAND_STRIP_COLORS.map((hex) => (
               <span
                 key={hex}
                 className="h-1 w-6 rounded-full ring-1 ring-black/10 dark:ring-white/15"
