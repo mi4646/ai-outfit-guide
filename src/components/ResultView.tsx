@@ -57,7 +57,7 @@ function OutfitRow({ label, color, reason, main, locked }: OutfitRowProps) {
             {color.hex}
           </span>
         </div>
-        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+        <p className="mt-1 max-w-prose text-xs leading-5 text-muted-foreground">
           {reason}
         </p>
       </div>
@@ -140,16 +140,16 @@ export function ResultView({
             <h2 className="mt-1 text-2xl font-semibold tracking-tight">
               你的今日配色
             </h2>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            <p className="mt-2 max-w-prose text-sm leading-6 text-muted-foreground">
               {HARMONY_DESCRIPTIONS[harmonyKey]}
             </p>
             {note && (
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              <p className="mt-2 max-w-prose text-sm leading-6 text-muted-foreground">
                 {note}
               </p>
             )}
             {result.pairNote && (
-              <p className="mt-2 text-sm leading-6 text-accent">
+              <p className="mt-2 max-w-prose text-sm leading-6 text-accent">
                 {result.pairNote}
               </p>
             )}

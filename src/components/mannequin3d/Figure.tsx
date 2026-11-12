@@ -222,7 +222,7 @@ function createMaterials(): Materials {
     shoes: garment(PLACEHOLDER),
     accent: garment(PLACEHOLDER),
     seam: new THREE.MeshStandardMaterial({ color: 0x2a2522, roughness: 0.9 }),
-    sole: new THREE.MeshStandardMaterial({ color: 0x241d18, roughness: 0.9 }),
+    sole: new THREE.MeshStandardMaterial({ color: 0x3a2f27, roughness: 0.9 }),
   }
 }
 
@@ -373,8 +373,8 @@ function buildFigure(spec: OutfitSpec, mats: Materials, gender: Gender) {
         shoe.add(strap)
       }
     }
-    const sole = new THREE.Mesh(new THREE.BoxGeometry(0.125, 0.024, 0.28), mats.sole)
-    sole.position.set(0, 0.012, 0.06)
+    const sole = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.016, 0.24), mats.sole)
+    sole.position.set(0, 0.008, 0.055)
     shoe.add(sole)
     return shoe
   }
@@ -386,7 +386,7 @@ function buildFigure(spec: OutfitSpec, mats: Materials, gender: Gender) {
   const accent = new THREE.Group()
   if (spec.accent === 'belt') {
     accent.add(tubeY([0, 1.015, 0], 0.16, 0.16, 0.045, mats.accent, 0.72))
-    const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.04, 0.018), mats.seam)
+    const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.04, 0.018), mats.accent)
     buckle.position.set(0, 1.015, 0.118)
     accent.add(buckle)
   } else {

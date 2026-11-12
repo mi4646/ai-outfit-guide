@@ -405,7 +405,7 @@ export default function App() {
                 transition={{ duration: 0.2, ease: 'easeOut' }}
                 className={cn(
                   // DOM 在前，手机上视觉与焦点顺序一致；桌面靠 order 排到右栏。
-                  'self-start lg:order-last lg:sticky lg:top-6',
+                  'w-full self-start lg:order-last lg:sticky lg:top-6',
                   // 结果前的步骤：手机上收成吸顶条，选色时颜色一直看得见。
                   state.step !== 'result' && 'max-lg:sticky max-lg:top-0 max-lg:z-20',
                 )}

@@ -55,7 +55,7 @@ export function MannequinPanel({
       onRegionChange={setActiveRegion}
       className={cn(
         'w-auto shrink-0 lg:mx-auto lg:h-[420px]',
-        compact ? 'h-[132px]' : 'h-[280px]',
+        compact ? 'h-[132px] sm:h-[200px]' : 'h-[280px]',
       )}
     />
   )
@@ -84,7 +84,7 @@ export function MannequinPanel({
             aria-label={`${SEASON_LABELS[season]}季人形轮廓：${summary}`}
             className={cn(
               'min-w-0 shrink-0 overflow-hidden lg:mx-auto lg:h-[420px] lg:w-[194px]',
-              compact ? 'h-[132px] w-[64px]' : 'h-[280px] w-[129px]',
+              compact ? 'h-[132px] w-[64px] sm:h-[200px] sm:w-[92px]' : 'h-[280px] w-[129px]',
             )}
           >
             <Suspense fallback={fallback}>
@@ -152,7 +152,7 @@ export function MannequinPanel({
                   {color?.name ?? '待配色'}
                 </span>
                 {color && (
-                  <span className="hidden font-mono text-[11px] uppercase text-muted-foreground lg:inline">
+                  <span className="hidden font-mono text-[11px] uppercase text-muted-foreground sm:inline">
                     {color.hex}
                   </span>
                 )}
