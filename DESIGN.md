@@ -166,7 +166,7 @@ A single centered column capped at **1024px** (`max-w-5xl`), with 16px page gutt
 
 From `lg` (1024px) the task and the preview split into a two-column grid: the form takes the remaining width, the preview card is a fixed **300px** sticky column at the top. Below `lg` the preview sits above the form as a **compact sticky strip**: a **64×132** figure beside the five-region legend in two columns of 44px rows (one column below 360px, and the figure grows to **92×200** from 640px), stuck to the top of the viewport while the form scrolls under it. The result step is the exception: there the panel returns to the full card with the **129×280** figure and the legend in one column. On desktop the compact steps keep the full **194×420** figure with the legend below it.
 
-**The Compact Preview Rule.** Before the result, the preview may not take more than ~280px of a phone viewport (about 200px above 360px wide); it must stay stuck to the top while the color grid scrolls, because the point of the panel is watching a color land on the figure, and that has to happen at the moment of choosing.
+**The Compact Preview Rule.** Before the result, the preview may not take more than ~200px of a phone viewport above 360px wide (it grows to ~290px at 320px, where the legend goes to one column); it must stay stuck to the top while the color grid scrolls, because the point of the panel is watching a color land on the figure, and that has to happen at the moment of choosing.
 
 **The Preview First Rule.** On mobile the body is the first thing after the step indicator. The user must see the color landing on a figure before scrolling into the form.
 

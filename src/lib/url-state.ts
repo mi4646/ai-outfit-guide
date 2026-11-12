@@ -1,5 +1,5 @@
 import { COLORS, customColor, type ColorEntry } from '../data/colors'
-import type { Season } from '../data/regions'
+import { PROVINCES, type Season } from '../data/regions'
 import type { AnchorRole, Gender } from './recommend'
 import { AGE_BANDS, STYLES, type AgeBand, type Style } from './profile'
 
@@ -50,7 +50,13 @@ export function parseState(search: string): Partial<AppState> {
   const gender: Gender | null =
     genderParam === 'male' || genderParam === 'female' ? genderParam : null
 
-  const provinceId = params.get('p') || null
+  // 分享链接里的地区 id 必须先验真；未知 id 会让结果页按「未知地区」出一套配色。
+  const provinceParam = params.get('p')
+  const provinceId =
+    provinceParam === 'overseas' ||
+    PROVINCES.some((province) => province.id === provinceParam)
+      ? provinceParam
+      : null
 
   const monthRaw = Number(params.get('m'))
   const month =

@@ -88,6 +88,12 @@ describe('parseState / toSearch', () => {
     expect(parseState('?a=unknown&f=unknown').style).toBe('any')
   })
 
+  it('rejects a province id that does not exist', () => {
+    expect(parseState('?p=nowhere').provinceId).toBeNull()
+    expect(parseState('?p=guangdong').provinceId).toBe('guangdong')
+    expect(parseState('?p=overseas').provinceId).toBe('overseas')
+  })
+
   it('omits any from the URL', () => {
     const url = toSearch({ ...state() })
     expect(url).not.toContain('a=')

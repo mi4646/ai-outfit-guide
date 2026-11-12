@@ -75,7 +75,7 @@ function ColorPicker({ value, colors, label, onSelect }: ColorPickerProps) {
           const color = COLORS.find((item) => item.id === next)
           if (color) onSelect(color)
         }}
-        className="grid grid-cols-6 gap-x-2 gap-y-3 sm:grid-cols-10 sm:gap-x-3"
+        className="grid grid-cols-5 gap-x-1.5 gap-y-3 min-[380px]:grid-cols-6 min-[380px]:gap-x-2 sm:grid-cols-10 sm:gap-x-3"
       >
         {colors.map((color) => (
           <div key={color.id} className="flex flex-col items-center gap-1">
