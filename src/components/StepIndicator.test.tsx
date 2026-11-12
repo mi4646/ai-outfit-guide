@@ -16,7 +16,7 @@ describe('StepIndicator', () => {
       />,
     )
 
-    for (const label of ['画像', '性别', '地区', '上衣', '配色']) {
+    for (const label of ['画像', '性别', '地区', '单品', '配色']) {
       expect(html).toContain(label)
     }
     expect(html).toContain('aria-current="step"')

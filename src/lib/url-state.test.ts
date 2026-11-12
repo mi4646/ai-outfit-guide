@@ -5,6 +5,7 @@ import {
   STEPS,
   canGo,
   parseState,
+  resolveAnchor,
   resolveStep,
   stepNumber,
   toSearch,
@@ -17,12 +18,21 @@ const BLACK: ColorEntry = {
   family: 'neutral',
 }
 
+const RED: ColorEntry = {
+  id: 'red',
+  name: '正红',
+  hex: '#c62828',
+  family: 'warm',
+}
+
 const state = (patch = {}) => ({
   gender: null,
   provinceId: null,
   month: 7,
   seasonOverride: null,
   top: null,
+  pants: null,
+  anchor: null,
   age: 'any' as const,
   style: 'any' as const,
   step: 'profile' as const,
@@ -42,7 +52,7 @@ describe('STEPS', () => {
       '画像',
       '性别',
       '地区',
-      '上衣',
+      '单品',
       '配色',
     ])
   })
@@ -90,6 +100,54 @@ describe('parseState / toSearch', () => {
       expect(parseState(`?f=${style}`).style).toBe(style)
     }
   })
+
+  it('derives a top anchor from the old c parameter', () => {
+    const parsed = parseState('?c=0b0b0b')
+    expect(parsed.top?.id).toBe('black')
+    expect(parsed.pants).toBeNull()
+    expect(parsed.anchor).toBe('top')
+  })
+
+  it('reads pc as the pants piece', () => {
+    const parsed = parseState('?pc=c62828')
+    expect(parsed.pants?.id).toBe('red')
+    expect(parsed.top).toBeNull()
+    expect(parsed.anchor).toBe('pants')
+  })
+
+  it('reads both pieces and an explicit pants anchor', () => {
+    const parsed = parseState('?c=0b0b0b&pc=c62828&k=pants')
+    expect(parsed.top?.id).toBe('black')
+    expect(parsed.pants?.id).toBe('red')
+    expect(parsed.anchor).toBe('pants')
+  })
+
+  it('ignores an anchor that has no piece', () => {
+    expect(parseState('?c=0b0b0b&k=pants').anchor).toBe('top')
+  })
+
+  it('round-trips both pieces with a pants anchor', () => {
+    const url = toSearch({
+      ...state({ top: BLACK, pants: RED, anchor: 'pants' }),
+    })
+    expect(url).toContain('c=0b0b0b')
+    expect(url).toContain('pc=c62828')
+    expect(url).toContain('k=pants')
+  })
+
+  it('keeps a top-anchored pair free of the k parameter', () => {
+    const url = toSearch({
+      ...state({ top: BLACK, pants: RED, anchor: 'top' }),
+    })
+    expect(url).not.toContain('k=pants')
+  })
+
+  it('omits k when the pants anchor has no pants color', () => {
+    const url = toSearch({
+      ...state({ top: BLACK, pants: null, anchor: 'pants' }),
+    })
+    expect(url).not.toContain('k=pants')
+  })
 })
 
 describe('resolveStep / canGo', () => {
@@ -117,6 +175,44 @@ describe('resolveStep / canGo', () => {
     expect(resolveStep({ gender: 'female', provinceId: 'guangdong' })).toBe(
       'color',
     )
+  })
+
+  it('accepts a pants-only anchor for the result', () => {
+    expect(
+      resolveStep({
+        gender: 'female',
+        provinceId: 'guangdong',
+        pants: RED,
+        step: 'result',
+      }),
+    ).toBe('result')
+    expect(
+      canGo({ gender: 'female', provinceId: 'guangdong', pants: RED }, 'result'),
+    ).toBe(true)
+  })
+
+  it('still requires at least one piece for the result', () => {
+    expect(
+      canGo({ gender: 'female', provinceId: 'guangdong' }, 'result'),
+    ).toBe(false)
+  })
+
+  it('does not fall back when the selected anchor has no color', () => {
+    expect(
+      resolveAnchor({ anchor: 'pants', top: BLACK, pants: null }),
+    ).toBeNull()
+    expect(
+      canGo(
+        {
+          gender: 'female',
+          provinceId: 'guangdong',
+          anchor: 'pants',
+          top: BLACK,
+          pants: null,
+        },
+        'result',
+      ),
+    ).toBe(false)
   })
 
   it('enables earlier steps by prerequisite', () => {

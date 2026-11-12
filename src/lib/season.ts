@@ -36,6 +36,19 @@ export function seasonOf(zoneId: ZoneId, month: number): Season {
   return getZone(zoneId).months[index]
 }
 
+export function seasonFromMonth(month: number): Season {
+  return MONTHS[((month - 1) % 12 + 12) % 12]
+}
+
+export function seasonFromTemperature(
+  apparentC: number,
+  calendarSeason: Season,
+): Season {
+  if (apparentC >= 27) return 'summer'
+  if (apparentC <= 10) return 'winter'
+  return calendarSeason
+}
+
 function distance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const toRad = Math.PI / 180
   const dLat = (lat1 - lat2) * toRad

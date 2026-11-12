@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import type { ColorEntry } from '../data/colors'
+import type { Season } from '../data/regions'
 import type { Gender } from '../lib/recommend'
 import { cn } from '../lib/utils'
 import { Swatch } from './ColorSwatch'
@@ -9,32 +10,53 @@ import {
   REGION_LABELS,
   type MannequinRegion,
 } from './mannequin/figures'
+import { Mannequin3DBoundary, hasWebGL } from './mannequin3d/Boundary'
+import { SEASON_LABELS } from './mannequin3d/scene'
 import { Badge } from './ui/badge'
 import { Card } from './ui/card'
 
-export type MannequinStatus = 'pending' | 'top' | 'result'
+const Mannequin3D = lazy(() => import('./mannequin3d/Mannequin3D'))
+
+export type MannequinStatus = 'pending' | 'piece' | 'result'
 
 interface MannequinPanelProps {
   gender: Gender
+  season: Season
   colors: Partial<Record<MannequinRegion, ColorEntry>>
   status: MannequinStatus
 }
 
 const STATUS_LABELS: Record<MannequinStatus, string> = {
   pending: '待配色',
-  top: '已选上衣',
+  piece: '已选单品',
   result: '今日配色',
 }
 
 export function MannequinPanel({
   gender,
+  season,
   colors,
   status,
 }: MannequinPanelProps) {
   const [activeRegion, setActiveRegion] = useState<MannequinRegion | null>(null)
+  const canRender3D = useMemo(() => hasWebGL(), [])
+  const summary = REGIONS.map((region) => {
+    const color = colors[region]
+    return `${REGION_LABELS[region]}${color ? ` ${color.name}` : '待配色'}`
+  }).join('，')
+
+  const fallback = (
+    <Mannequin
+      gender={gender}
+      colors={colors}
+      activeRegion={activeRegion}
+      onRegionChange={setActiveRegion}
+      className="h-[280px] w-auto shrink-0 lg:mx-auto lg:h-[420px]"
+    />
+  )
 
   return (
-    <Card className="flex flex-col p-4 sm:p-5">
+    <Card className="flex flex-col p-4 sm:p-5" data-testid="mannequin-panel">
       <div className="flex items-start justify-between gap-3">
         <h2 className="text-base font-semibold tracking-tight">配色预览</h2>
         <Badge variant={status === 'result' ? 'accent' : 'outline'}>
@@ -43,13 +65,27 @@ export function MannequinPanel({
       </div>
 
       <div className="mt-3 flex items-center gap-4 lg:block">
-        <Mannequin
-          gender={gender}
-          colors={colors}
-          activeRegion={activeRegion}
-          onRegionChange={setActiveRegion}
-          className="h-[280px] w-auto shrink-0 lg:mx-auto lg:h-[420px]"
-        />
+        {canRender3D ? (
+          <div
+            role="img"
+            aria-label={`${SEASON_LABELS[season]}季人形轮廓：${summary}`}
+            className="h-[280px] w-[129px] min-w-0 shrink-0 overflow-hidden lg:mx-auto lg:h-[420px] lg:w-[194px]"
+          >
+            <Suspense fallback={fallback}>
+              <Mannequin3DBoundary fallback={fallback}>
+                <Mannequin3D
+                  gender={gender}
+                  season={season}
+                  colors={colors}
+                  activeRegion={activeRegion}
+                  onRegionChange={setActiveRegion}
+                />
+              </Mannequin3DBoundary>
+            </Suspense>
+          </div>
+        ) : (
+          fallback
+        )}
 
         <div className="min-w-0 flex-1 space-y-0.5 lg:mt-4">
           {REGIONS.map((region) => {

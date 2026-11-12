@@ -1,14 +1,9 @@
 import { LoaderCircle, LocateFixed, MapPin } from 'lucide-react'
 import { useState } from 'react'
-import {
-  PROVINCES,
-  ZONES,
-  getProvince,
-  type Season,
-  type ZoneId,
-} from '../data/regions'
-import { locate, seasonOf } from '../lib/season'
+import { PROVINCES, ZONES, type Season } from '../data/regions'
+import { locate } from '../lib/season'
 import { STEPS, stepNumber } from '../lib/url-state'
+import type { WeatherState } from '../lib/weather'
 import { cn } from '../lib/utils'
 import { Button } from './ui/button'
 import {
@@ -29,7 +24,12 @@ interface RegionStepProps {
   provinceId: string | null
   month: number
   seasonOverride: Season | null
-  onProvince: (provinceId: string) => void
+  autoSeason: Season | null
+  weather: WeatherState
+  onProvince: (
+    provinceId: string,
+    coords?: { lat: number; lon: number },
+  ) => void
   onSeason: (season: Season) => void
   onAutoSeason: () => void
   onNext: () => void
@@ -40,6 +40,8 @@ export function RegionStep({
   provinceId,
   month,
   seasonOverride,
+  autoSeason,
+  weather,
   onProvince,
   onSeason,
   onAutoSeason,
@@ -51,10 +53,6 @@ export function RegionStep({
   )
   const [geoMessage, setGeoMessage] = useState('')
 
-  const province = provinceId ? getProvince(provinceId) : undefined
-  const zoneId: ZoneId | null = province?.zone ??
-    (provinceId === 'overseas' ? 'overseas' : null)
-  const autoSeason = zoneId ? seasonOf(zoneId, month) : null
   const effectiveSeason = seasonOverride ?? autoSeason
 
   function useMyLocation() {
@@ -68,13 +66,9 @@ export function RegionStep({
     setGeoMessage('')
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const result = locate(
-          position.coords.latitude,
-          position.coords.longitude,
-          month,
-        )
-        onProvince(result.provinceId)
-        onSeason(result.season)
+        const { latitude, longitude } = position.coords
+        const result = locate(latitude, longitude, month)
+        onProvince(result.provinceId, { lat: latitude, lon: longitude })
         setGeoStatus('done')
         setGeoMessage(`已定位：${result.provinceName} · ${result.zoneName}`)
       },
@@ -95,7 +89,7 @@ export function RegionStep({
           </p>
           <CardTitle>你在哪里过这个季节？</CardTitle>
           <CardDescription>
-            地区决定气候带，再按当前月份估算春夏秋冬；估算不准可以手动改。
+            地区决定气候带，实时气温参与季节判定；估算不准可以手动改。
           </CardDescription>
         </div>
 
@@ -163,12 +157,39 @@ export function RegionStep({
               {geoMessage}
             </p>
           )}
+
+          {weather.status === 'loading' && (
+            <p className="text-xs leading-5 text-muted-foreground" role="status">
+              正在获取当前气温…
+            </p>
+          )}
+          {weather.status === 'ok' && weather.reading && (
+            <p className="text-xs leading-5 text-muted-foreground" role="status">
+              当前气温 {Math.round(weather.reading.temperatureC)}°C · 体感{' '}
+              {Math.round(weather.reading.apparentC)}°C
+            </p>
+          )}
+          {weather.status === 'error' && (
+            <p className="text-xs leading-5 text-muted-foreground" role="status">
+              气温暂不可用，按月份估算。
+            </p>
+          )}
+          {weather.status === 'idle' && provinceId === 'overseas' && (
+            <p className="text-xs leading-5 text-muted-foreground" role="status">
+              海外地区暂按月份估算；使用定位可获取当地气温。
+            </p>
+          )}
+          <p className="text-[11px] leading-5 text-muted-foreground">
+            选择地区后会把该地区坐标发送给 Open-Meteo 获取气温。
+          </p>
         </div>
 
         <div className="space-y-3">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <p className="text-xs font-medium text-muted-foreground">
-              当前季节（按 {month} 月估算）
+              {weather.status === 'ok'
+                ? '当前季节（按实时气温与月份估算）'
+                : `当前季节（按 ${month} 月估算）`}
             </p>
             {seasonOverride && autoSeason && (
               <button

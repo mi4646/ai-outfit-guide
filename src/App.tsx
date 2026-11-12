@@ -13,9 +13,18 @@ import { ResultView } from './components/ResultView'
 import { StepIndicator } from './components/StepIndicator'
 import { ThemeToggle } from './components/ThemeToggle'
 import type { ColorEntry } from './data/colors'
-import { recommend } from './lib/recommend'
+import { getProvince, type Season } from './data/regions'
+import { recommend, type Piece } from './lib/recommend'
+import { locate, seasonFromMonth, seasonFromTemperature, seasonOf } from './lib/season'
 import type { AppState, Step } from './lib/url-state'
-import { canGo, parseState, resolveStep, toSearch } from './lib/url-state'
+import {
+  canGo,
+  parseState,
+  resolveAnchor,
+  resolveStep,
+  toSearch,
+} from './lib/url-state'
+import { fetchWeather, type WeatherState } from './lib/weather'
 
 function currentMonth(): number {
   return new Date().getMonth() + 1
@@ -30,6 +39,8 @@ function initialState(): AppState {
     month,
     seasonOverride: parsed.seasonOverride ?? null,
     top: parsed.top ?? null,
+    pants: parsed.pants ?? null,
+    anchor: parsed.anchor ?? null,
     age: parsed.age ?? 'any',
     style: parsed.style ?? 'any',
     step: resolveStep({ ...parsed, month }),
@@ -39,27 +50,98 @@ function initialState(): AppState {
 export default function App() {
   const [state, setState] = useState<AppState>(initialState)
   const [activeCombo, setActiveCombo] = useState(0)
+  const [variant, setVariant] = useState(0)
+  const [geoCoords, setGeoCoords] = useState<{
+    lat: number
+    lon: number
+  } | null>(null)
+  const [weather, setWeather] = useState<WeatherState>({
+    key: null,
+    status: 'idle',
+    reading: null,
+  })
   const reduceMotion = useReducedMotion()
 
+  const coords = useMemo(() => {
+    if (geoCoords) return geoCoords
+    const province = state.provinceId
+      ? getProvince(state.provinceId)
+      : undefined
+    return province ? { lat: province.lat, lon: province.lon } : null
+  }, [geoCoords, state.provinceId])
+  const weatherKey = coords
+    ? `${coords.lat.toFixed(2)},${coords.lon.toFixed(2)}`
+    : null
+
+  useEffect(() => {
+    if (!coords || !weatherKey) return
+
+    let cancelled = false
+    void fetchWeather(coords.lat, coords.lon).then((reading) => {
+      if (cancelled) return
+      setWeather({
+        key: weatherKey,
+        status: reading ? 'ok' : 'error',
+        reading,
+      })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [coords, weatherKey])
+
+  const currentWeather: WeatherState =
+    weather.key === weatherKey
+      ? weather
+      : { key: weatherKey, status: weatherKey ? 'loading' : 'idle', reading: null }
+
+  const calendarSeason = useMemo<Season>(() => {
+    if (coords) return locate(coords.lat, coords.lon, state.month).season
+    if (state.provinceId === 'overseas') {
+      return seasonOf('overseas', state.month)
+    }
+    return seasonFromMonth(state.month)
+  }, [coords, state.provinceId, state.month])
+
+  const autoSeason = currentWeather.reading
+    ? seasonFromTemperature(currentWeather.reading.apparentC, calendarSeason)
+    : calendarSeason
+  const panelSeason = state.seasonOverride ?? autoSeason
+
+  const anchor = resolveAnchor(state)
+
   const recommendation = useMemo(() => {
-    if (!state.gender || !state.provinceId || !state.top) return null
+    if (!state.gender || !state.provinceId || !anchor) return null
+
+    const pieces: Piece[] = []
+    const anchorColor = anchor === 'top' ? state.top : state.pants
+    if (anchorColor) pieces.push({ role: anchor, color: anchorColor })
+    const other = anchor === 'top' ? state.pants : state.top
+    // 换一套时只保留锚点，另一件已选单品也参与重配。
+    if (other && variant === 0)
+      pieces.push({ role: anchor === 'top' ? 'pants' : 'top', color: other })
+
     return recommend({
       gender: state.gender,
       provinceId: state.provinceId,
       month: state.month,
-      top: state.top,
-      season: state.seasonOverride ?? undefined,
+      pieces,
+      season: panelSeason,
       age: state.age,
       style: state.style,
+      variant,
     })
   }, [
     state.gender,
     state.provinceId,
     state.month,
     state.top,
-    state.seasonOverride,
+    state.pants,
+    anchor,
+    panelSeason,
     state.age,
     state.style,
+    variant,
   ])
 
   const combos = recommendation
@@ -68,20 +150,25 @@ export default function App() {
   const activeComboData = combos[activeCombo] ?? recommendation?.primary ?? null
 
   const panelColors: Partial<Record<MannequinRegion, ColorEntry>> =
-    state.step === 'result' && activeComboData && state.top
+    state.step === 'result' && activeComboData
       ? {
           inner: activeComboData.inner.color,
-          top: state.top,
+          top: activeComboData.top.color,
           pants: activeComboData.pants.color,
           shoes: activeComboData.shoes.color,
           accent: activeComboData.accent.color,
         }
-      : state.top
-        ? { top: state.top }
-        : {}
+      : {
+          ...(state.top ? { top: state.top } : {}),
+          ...(state.pants ? { pants: state.pants } : {}),
+        }
 
   const panelStatus: MannequinStatus =
-    state.step === 'result' ? 'result' : state.top ? 'top' : 'pending'
+    state.step === 'result'
+      ? 'result'
+      : state.top || state.pants
+        ? 'piece'
+        : 'pending'
 
   useEffect(() => {
     const url = `${window.location.pathname}${toSearch(state)}`
@@ -96,14 +183,28 @@ export default function App() {
     if (canGo(state, step)) update({ step })
   }
 
-  function reset() {
+  function resetCombos() {
     setActiveCombo(0)
+    setVariant(0)
+  }
+
+  function swapBatch() {
+    if (!recommendation) return
+    setVariant((current) => (current + 1) % recommendation.batchCount)
+    setActiveCombo(0)
+  }
+
+  function reset() {
+    resetCombos()
+    setGeoCoords(null)
     setState({
       gender: null,
       provinceId: null,
       month: currentMonth(),
       seasonOverride: null,
       top: null,
+      pants: null,
+      anchor: null,
       age: 'any',
       style: 'any',
       step: 'profile',
@@ -117,11 +218,11 @@ export default function App() {
           age={state.age}
           style={state.style}
           onAge={(age) => {
-            setActiveCombo(0)
+            resetCombos()
             update({ age })
           }}
           onStyle={(style) => {
-            setActiveCombo(0)
+            resetCombos()
             update({ style })
           }}
           onNext={() => update({ step: 'gender' })}
@@ -146,16 +247,19 @@ export default function App() {
           provinceId={state.provinceId}
           month={state.month}
           seasonOverride={state.seasonOverride}
-          onProvince={(provinceId) => {
-            setActiveCombo(0)
+          autoSeason={state.provinceId ? autoSeason : null}
+          weather={currentWeather}
+          onProvince={(provinceId, coords) => {
+            resetCombos()
+            setGeoCoords(coords ?? null)
             update({ provinceId, seasonOverride: null })
           }}
           onSeason={(season) => {
-            setActiveCombo(0)
+            resetCombos()
             update({ seasonOverride: season })
           }}
           onAutoSeason={() => {
-            setActiveCombo(0)
+            resetCombos()
             update({ seasonOverride: null })
           }}
           onNext={() => update({ step: 'color' })}
@@ -167,10 +271,29 @@ export default function App() {
     if (state.step === 'color') {
       return (
         <ColorStep
-          value={state.top}
-          onSelect={(top) => {
-            setActiveCombo(0)
-            update({ top })
+          anchor={state.anchor}
+          top={state.top}
+          pants={state.pants}
+          onAnchor={(anchor) => {
+            resetCombos()
+            update({ anchor })
+          }}
+          onSelect={(role, color) => {
+            resetCombos()
+            update(
+              role === 'top'
+                ? { top: color, anchor: state.anchor ?? role }
+                : { pants: color, anchor: state.anchor ?? role },
+            )
+          }}
+          onClear={(role) => {
+            const otherColor = role === 'top' ? state.pants : state.top
+            resetCombos()
+            update(
+              role === 'top'
+                ? { top: null, anchor: otherColor ? 'pants' : state.anchor }
+                : { pants: null, anchor: otherColor ? 'top' : state.anchor },
+            )
           }}
           onNext={() => update({ step: 'result' })}
           onBack={() => navigate('region')}
@@ -189,10 +312,14 @@ export default function App() {
           recommendation={recommendation}
           activeCombo={activeCombo}
           onActiveComboChange={setActiveCombo}
+          batchCount={recommendation.batchCount}
+          variant={variant}
+          onSwap={swapBatch}
           gender={state.gender}
           provinceId={state.provinceId}
           age={state.age}
           style={state.style}
+          temperature={currentWeather.reading?.temperatureC ?? null}
           onBack={() => update({ step: 'color' })}
           onRegion={() => update({ step: 'region' })}
           onReset={reset}
@@ -272,6 +399,7 @@ export default function App() {
               >
                 <MannequinPanel
                   gender={state.gender}
+                  season={panelSeason}
                   colors={panelColors}
                   status={panelStatus}
                 />

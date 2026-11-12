@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { PROVINCES, ZONES } from '../data/regions'
-import { locate, nearestProvince, seasonOf } from './season'
+import {
+  locate,
+  nearestProvince,
+  seasonFromTemperature,
+  seasonOf,
+} from './season'
 
 describe('seasonOf', () => {
   it('uses the southern China table for July', () => {
@@ -27,6 +32,21 @@ describe('seasonOf', () => {
         )
       }
     }
+  })
+})
+
+describe('seasonFromTemperature', () => {
+  it('turns a hot autumn day into summer', () => {
+    expect(seasonFromTemperature(27, 'autumn')).toBe('summer')
+  })
+
+  it('turns a cold summer day into winter', () => {
+    expect(seasonFromTemperature(10, 'summer')).toBe('winter')
+  })
+
+  it('keeps the calendar season in the mild band', () => {
+    expect(seasonFromTemperature(26, 'autumn')).toBe('autumn')
+    expect(seasonFromTemperature(11, 'spring')).toBe('spring')
   })
 })
 
