@@ -20,6 +20,7 @@ dist-ssr
 coverage
 *.tsbuildinfo
 .impeccable/
+.playwright-mcp/
 
 # Editor directories and files
 .vscode/*

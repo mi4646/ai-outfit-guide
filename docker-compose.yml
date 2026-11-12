@@ -1,0 +1,15 @@
+services:
+  web:
+    build:
+      context: .
+      args:
+        NPM_REGISTRY: ${NPM_REGISTRY:-https://mirrors.cloud.tencent.com/npm/}
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s

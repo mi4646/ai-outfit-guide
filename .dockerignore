@@ -1,0 +1,15 @@
+node_modules
+dist
+.git
+.gitignore
+.context
+.worktrees
+.playwright-mcp
+.gstack
+.impeccable
+.vitest
+coverage
+docs/design/baselines
+*.log
+.env
+.env.*

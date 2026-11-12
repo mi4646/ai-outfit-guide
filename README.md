@@ -17,6 +17,21 @@ pnpm build      # tsc -b && vite build
 pnpm preview    # 预览 dist/
 ```
 
+## Docker 部署
+
+```bash
+docker compose up -d --build   # http://localhost:8080
+docker compose down
+```
+
+端口默认 8080，可用 `WEB_PORT=80 docker compose up -d` 覆盖。镜像内由 nginx 服务 `dist/`，带 SPA 回退与静态资源长缓存；改代码后需重新加 `--build`。
+
+依赖默认从 `https://mirrors.cloud.tencent.com/npm/`（国内源）安装。海外或需要官方源时：
+
+```bash
+NPM_REGISTRY=https://registry.npmjs.org docker compose build
+```
+
 ## 结构
 
 | 路径 | 作用 |
