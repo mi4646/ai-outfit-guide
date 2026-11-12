@@ -1,4 +1,5 @@
 import { RefreshCw } from 'lucide-react'
+import { useState } from 'react'
 import type { ColorEntry } from '../data/colors'
 import { getProvince } from '../data/regions'
 import { classifyHarmony } from '../lib/color'
@@ -30,9 +31,10 @@ interface OutfitRowProps {
   color: ColorEntry
   reason: string
   main?: boolean
+  locked?: boolean
 }
 
-function OutfitRow({ label, color, reason, main }: OutfitRowProps) {
+function OutfitRow({ label, color, reason, main, locked }: OutfitRowProps) {
   return (
     <div
       className={cn(
@@ -45,6 +47,11 @@ function OutfitRow({ label, color, reason, main }: OutfitRowProps) {
         <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
           <p className="text-sm font-medium">
             {label} · {color.name}
+            {locked && (
+              <span className="ml-1.5 text-[11px] font-normal text-muted-foreground">
+                已锁定
+              </span>
+            )}
           </p>
           <span className="font-mono text-[11px] uppercase text-muted-foreground">
             {color.hex}
@@ -69,6 +76,7 @@ interface ResultViewProps {
   provinceId: string
   age: AgeBand
   style: Style
+  lockedPieces: ReadonlyArray<'top' | 'pants'>
   temperature: number | null
   onBack: () => void
   onRegion: () => void
@@ -86,11 +94,13 @@ export function ResultView({
   provinceId,
   age,
   style,
+  lockedPieces,
   temperature,
   onBack,
   onRegion,
   onReset,
 }: ResultViewProps) {
+  const [confirmReset, setConfirmReset] = useState(false)
   const result = recommendation
   const combos = [result.primary, ...result.alternatives]
   const combo = combos[activeCombo] ?? result.primary
@@ -121,7 +131,7 @@ export function ResultView({
           </div>
 
           <div>
-            <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
               Your palette
             </p>
             <h2 className="mt-1 text-2xl font-semibold tracking-tight">
@@ -153,12 +163,14 @@ export function ResultView({
               color={combo.top.color}
               reason={combo.top.reason}
               main={result.anchorRole === 'top'}
+              locked={lockedPieces.includes('top')}
             />
             <OutfitRow
               label="裤子"
               color={combo.pants.color}
               reason={combo.pants.reason}
               main={result.anchorRole === 'pants'}
+              locked={lockedPieces.includes('pants')}
             />
             <OutfitRow
               label="鞋"
@@ -177,14 +189,20 @@ export function ResultView({
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardContent className="space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="text-sm font-semibold">备选方案</h3>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-baseline gap-2">
+                <h3 className="text-sm font-semibold">方案</h3>
+                <span className="text-[11px] text-muted-foreground">
+                  第 {variant + 1} / {batchCount} 组
+                </span>
+              </div>
               <Button
                 type="button"
                 variant="accent"
                 size="sm"
                 onClick={onSwap}
                 aria-label={`换一套方案（第 ${variant + 1} 组，共 ${batchCount} 组）`}
+                className="h-11 sm:h-9"
               >
                 <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
                 换一套
@@ -197,7 +215,7 @@ export function ResultView({
                   type="button"
                   onClick={() => onActiveComboChange(index)}
                   aria-pressed={activeCombo === index}
-                  aria-label={`方案 ${index + 1}：${item.inner.color.name}、${item.top.color.name}、${item.pants.color.name}、${item.shoes.color.name}、${item.accent.color.name}`}
+                  aria-label={`${index === 0 ? '主方案' : `方案 ${index + 1}`}：${item.inner.color.name}、${item.top.color.name}、${item.pants.color.name}、${item.shoes.color.name}、${item.accent.color.name}`}
                   className={cn(
                     'flex items-center justify-between gap-3 rounded-2xl border p-3 text-left transition-colors',
                     activeCombo === index
@@ -213,7 +231,7 @@ export function ResultView({
                     )}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    方案 {index + 1}
+                    {index === 0 ? '主方案' : `方案 ${index + 1}`}
                   </span>
                 </button>
               ))}
@@ -225,19 +243,19 @@ export function ResultView({
           <CardContent className="space-y-3">
             <h3 className="text-sm font-semibold">避开这些</h3>
             {result.avoid.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
+              <ul className="space-y-2.5">
                 {result.avoid.map((item) => (
-                  <span
-                    key={item.color.id}
-                    title={item.reason}
-                    aria-label={`${item.color.name}：${item.reason}`}
-                    className="inline-flex items-center gap-2 rounded-full border border-border px-2.5 py-1 text-xs"
-                  >
+                  <li key={item.color.id} className="flex items-start gap-2.5">
                     <Swatch color={item.color} size="sm" />
-                    {item.color.name}
-                  </span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium">{item.color.name}</p>
+                      <p className="mt-0.5 text-[11px] leading-5 text-muted-foreground">
+                        {item.reason}
+                      </p>
+                    </div>
+                  </li>
                 ))}
-              </div>
+              </ul>
             ) : (
               <p className="text-xs text-muted-foreground">
                 这组搭配没有明显冲突色。
@@ -255,8 +273,15 @@ export function ResultView({
         <Button variant="outline" onClick={onRegion}>
           换个地区
         </Button>
-        <Button variant="ghost" onClick={onReset}>
-          重新开始
+        <Button
+          variant="ghost"
+          onClick={() => {
+            if (confirmReset) onReset()
+            else setConfirmReset(true)
+          }}
+          onBlur={() => setConfirmReset(false)}
+        >
+          {confirmReset ? '再点一次清空全部选择' : '重新开始'}
         </Button>
       </div>
     </div>

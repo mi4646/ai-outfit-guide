@@ -32,7 +32,7 @@ export function GenderStep({
     <Card>
       <CardContent className="space-y-6">
         <div className="space-y-2">
-          <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+          <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
             Step {stepNumber('gender')} / {STEPS.length}
           </p>
           <CardTitle>先选一下性别</CardTitle>

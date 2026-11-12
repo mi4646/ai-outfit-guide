@@ -54,6 +54,7 @@ const props = (profile: {
   onSwap: () => {},
   gender: 'female' as const,
   provinceId: 'guangdong',
+  lockedPieces: ['top'] as const,
   temperature: null,
   onBack: () => {},
   onRegion: () => {},
@@ -130,14 +131,14 @@ describe('ResultView profile badges and note', () => {
     const html = renderToStaticMarkup(
       <ResultView {...props({ age: 'any', style: 'any' })} />,
     )
-    expect(html).toContain('方案 1：雾蓝、纯黑、沙色')
+    expect(html).toContain('主方案：雾蓝、纯黑、沙色')
   })
 
   it('renders the swap button with its batch position', () => {
     const html = renderToStaticMarkup(
       <ResultView {...props({ age: 'any', style: 'any' })} />,
     )
-    expect(html).toContain('备选方案')
+    expect(html).toContain('主方案')
     expect(html).toContain('换一套方案（第 1 组，共')
   })
 })

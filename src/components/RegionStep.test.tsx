@@ -34,7 +34,7 @@ describe('RegionStep weather', () => {
   it('falls back to the month label when the reading is unavailable', () => {
     const html = render({ key: '23.13,113.26', status: 'error', reading: null })
 
-    expect(html).toContain('气温暂不可用，按月份估算')
+    expect(html).toContain('气温暂不可用，已按 11 月估算。')
     expect(html).toContain('按 11 月估算')
   })
 })

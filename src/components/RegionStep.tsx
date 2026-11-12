@@ -34,6 +34,7 @@ interface RegionStepProps {
   onAutoSeason: () => void
   onNext: () => void
   onBack: () => void
+  onRetryWeather?: () => void
 }
 
 export function RegionStep({
@@ -47,6 +48,7 @@ export function RegionStep({
   onAutoSeason,
   onNext,
   onBack,
+  onRetryWeather,
 }: RegionStepProps) {
   const [geoStatus, setGeoStatus] = useState<'idle' | 'locating' | 'error' | 'done'>(
     'idle',
@@ -84,7 +86,7 @@ export function RegionStep({
     <Card>
       <CardContent className="space-y-6">
         <div className="space-y-2">
-          <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+          <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
             Step {stepNumber('region')} / {STEPS.length}
           </p>
           <CardTitle>你在哪里过这个季节？</CardTitle>
@@ -170,8 +172,20 @@ export function RegionStep({
             </p>
           )}
           {weather.status === 'error' && (
-            <p className="text-xs leading-5 text-muted-foreground" role="status">
-              气温暂不可用，按月份估算。
+            <p
+              className="flex flex-wrap items-center gap-2 text-xs leading-5 text-foreground"
+              role="status"
+            >
+              气温暂不可用，已按 {month} 月估算。
+              {onRetryWeather && (
+                <button
+                  type="button"
+                  onClick={onRetryWeather}
+                  className="rounded-full border border-border px-2.5 py-1 text-[11px] hover:bg-muted"
+                >
+                  重试
+                </button>
+              )}
             </p>
           )}
           {weather.status === 'idle' && provinceId === 'overseas' && (
@@ -217,7 +231,7 @@ export function RegionStep({
                   onClick={() => onSeason(option.value)}
                   aria-pressed={active}
                   className={cn(
-                    'h-10 min-w-14 rounded-full border px-4 text-sm transition-colors disabled:opacity-40',
+                    'h-11 min-w-14 rounded-full border px-4 text-sm transition-colors disabled:opacity-40',
                     active
                       ? 'border-accent bg-accent text-accent-foreground'
                       : 'border-border hover:bg-muted',

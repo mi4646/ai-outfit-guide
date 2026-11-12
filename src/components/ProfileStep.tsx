@@ -105,7 +105,7 @@ export function ProfileStep({
               />
             ))}
           </div>
-          <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+          <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
             Step {stepNumber('profile')} / {STEPS.length}
           </p>
           <CardTitle>年龄与穿衣风格</CardTitle>

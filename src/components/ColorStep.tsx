@@ -80,7 +80,7 @@ function ColorPicker({ value, colors, label, onSelect }: ColorPickerProps) {
         {colors.map((color) => (
           <div key={color.id} className="flex flex-col items-center gap-1">
             <ColorOption color={color} />
-            <span className="w-11 truncate text-center text-[10px] leading-4 text-muted-foreground">
+            <span className="w-11 truncate text-center text-[11px] leading-4 text-muted-foreground">
               {color.name}
             </span>
           </div>
@@ -125,7 +125,7 @@ export function ColorStep({
     <Card>
       <CardContent className="space-y-6">
         <div className="space-y-2">
-          <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+          <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
             Step {stepNumber('color')} / {STEPS.length}
           </p>
           <CardTitle>你已经有哪一件？</CardTitle>
@@ -205,7 +205,7 @@ export function ColorStep({
                     onClick={() => setFamily(item)}
                     aria-pressed={family === item}
                     className={cn(
-                      'rounded-full px-3 py-1.5 text-xs transition-colors',
+                      'min-h-11 rounded-full px-3 text-xs transition-colors',
                       family === item
                         ? 'bg-foreground text-background'
                         : 'text-muted-foreground hover:bg-muted',

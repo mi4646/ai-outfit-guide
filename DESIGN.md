@@ -154,7 +154,9 @@ Dark theme mirrors the same roles with **Night Paper** (#111110), **Night Sheet*
 
 A single centered column capped at **1024px** (`max-w-5xl`), with 16px page gutters and 24px section rhythm. The step indicator runs across the top as five equal cells separated by 1px rules.
 
-From `lg` (1024px) the task and the preview split into a two-column grid: the form takes the remaining width, the preview card is a fixed **300px** sticky column at the top. Below `lg` the preview moves above the form and uses the same card with a compact figure: the 3D canvas is **129×280** on mobile and **194×420** on desktop, with the five-row legend beside it on mobile and below it on desktop.
+From `lg` (1024px) the task and the preview split into a two-column grid: the form takes the remaining width, the preview card is a fixed **300px** sticky column at the top. Below `lg` the preview sits above the form as a **compact sticky strip**: a **64×132** figure beside the five-region legend in two columns of 44px rows, stuck to the top of the viewport while the form scrolls under it. The result step is the exception: there the panel returns to the full card with the **129×280** figure and the legend in one column. On desktop the compact steps keep the full **194×420** figure with the legend below it.
+
+**The Compact Preview Rule.** Before the result, the preview may not take more than ~200px of a phone viewport; it must stay stuck to the top while the color grid scrolls, because the point of the panel is watching a color land on the figure, and that has to happen at the moment of choosing.
 
 **The Preview First Rule.** On mobile the body is the first thing after the step indicator. The user must see the color landing on a figure before scrolling into the form.
 
@@ -165,6 +167,8 @@ The UI is flat by default, with tonal layering instead of stacked shadows: cards
 The 3D preview is the exception. Depth comes from a soft three-point studio light, a matte skin/fabric material, and a contact shadow under the feet — no real-time shadow maps, no post-processing. The committed direction is photo-real skin and fabric; the current procedural model approximates it with matte materials and a slight skin sheen.
 
 **The Flat-By-Default Rule.** Shadows belong to state and to the 3D figure, not to static UI surfaces.
+
+**The Page Glow Exception.** The single decorative gradient in this world is `.page-glow`, a near-invisible radial wash of the muted tone behind the header. It is the one sanctioned deviation from "no gradients": it never carries meaning, never sits on a card, and stays under 8% contrast against the paper.
 
 **The Studio-Light Rule.** The mannequin is lit like a fitting-room object: a warm key, a cool fill, a low rim, and one soft contact shadow. Never light it like a product ad with hard speculars.
 

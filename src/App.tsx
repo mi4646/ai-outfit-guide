@@ -16,6 +16,7 @@ import type { ColorEntry } from './data/colors'
 import { getProvince, type Season } from './data/regions'
 import { recommend, type Piece } from './lib/recommend'
 import { locate, seasonFromMonth, seasonFromTemperature, seasonOf } from './lib/season'
+import { cn } from './lib/utils'
 import type { AppState, Step } from './lib/url-state'
 import {
   canGo,
@@ -60,6 +61,7 @@ export default function App() {
     status: 'idle',
     reading: null,
   })
+  const [weatherAttempt, setWeatherAttempt] = useState(0)
   const reduceMotion = useReducedMotion()
 
   const coords = useMemo(() => {
@@ -88,7 +90,7 @@ export default function App() {
     return () => {
       cancelled = true
     }
-  }, [coords, weatherKey])
+  }, [coords, weatherKey, weatherAttempt])
 
   const currentWeather: WeatherState =
     weather.key === weatherKey
@@ -117,8 +119,8 @@ export default function App() {
     const anchorColor = anchor === 'top' ? state.top : state.pants
     if (anchorColor) pieces.push({ role: anchor, color: anchorColor })
     const other = anchor === 'top' ? state.pants : state.top
-    // 换一套时只保留锚点，另一件已选单品也参与重配。
-    if (other && variant === 0)
+    // 两件已选单品都锁定：换一套只重配其余三区。
+    if (other)
       pieces.push({ role: anchor === 'top' ? 'pants' : 'top', color: other })
 
     return recommend({
@@ -170,6 +172,10 @@ export default function App() {
         ? 'piece'
         : 'pending'
 
+  const lockedPieces = (['top', 'pants'] as const).filter((role) =>
+    role === 'top' ? state.top : state.pants,
+  )
+
   useEffect(() => {
     const url = `${window.location.pathname}${toSearch(state)}`
     window.history.replaceState(null, '', url)
@@ -192,6 +198,12 @@ export default function App() {
     if (!recommendation) return
     setVariant((current) => (current + 1) % recommendation.batchCount)
     setActiveCombo(0)
+  }
+
+  function retryWeather() {
+    if (!coords) return
+    setWeather({ key: weatherKey, status: 'loading', reading: null })
+    setWeatherAttempt((attempt) => attempt + 1)
   }
 
   function reset() {
@@ -264,6 +276,7 @@ export default function App() {
           }}
           onNext={() => update({ step: 'color' })}
           onBack={() => navigate('gender')}
+          onRetryWeather={retryWeather}
         />
       )
     }
@@ -319,6 +332,7 @@ export default function App() {
           provinceId={state.provinceId}
           age={state.age}
           style={state.style}
+          lockedPieces={lockedPieces}
           temperature={currentWeather.reading?.temperatureC ?? null}
           onBack={() => update({ step: 'color' })}
           onRegion={() => update({ step: 'region' })}
@@ -356,7 +370,7 @@ export default function App() {
               ))}
             </span>
             <div>
-              <p className="text-[10px] font-medium uppercase tracking-[0.25em] text-muted-foreground">
+              <p className="text-[11px] font-medium uppercase tracking-[0.25em] text-muted-foreground">
                 Color Wardrobe
               </p>
               <h1 className="mt-0.5 text-lg font-semibold tracking-tight">
@@ -377,7 +391,7 @@ export default function App() {
           {state.step !== 'profile' &&
           state.step !== 'gender' &&
           state.gender ? (
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+            <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_300px]">
               <AnimatePresence mode="wait" initial={false}>
                 <motion.div
                   key={state.step}
@@ -395,7 +409,11 @@ export default function App() {
                 initial={reduceMotion ? false : { opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.2, ease: 'easeOut' }}
-                className="order-first self-start lg:order-last lg:sticky lg:top-6"
+                className={cn(
+                  'order-first self-start lg:order-last lg:sticky lg:top-6',
+                  // 结果前的步骤：手机上收成吸顶条，选色时颜色一直看得见。
+                  state.step !== 'result' && 'max-lg:sticky max-lg:top-0 max-lg:z-20',
+                )}
               >
                 <MannequinPanel
                   gender={state.gender}
