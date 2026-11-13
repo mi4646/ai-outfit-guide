@@ -177,7 +177,7 @@ const GOLDEN = {
       role: 'inner',
       id: 'mist-blue',
       reason:
-        '内搭选雾蓝：与上衣形成 0.65 明度差，中性安全；夏季用浅冷低饱和保持清爽。',
+        '内搭选雾蓝：与上衣形成 0.65 明度差，中性安全。',
     },
     {
       role: 'top',
@@ -188,13 +188,13 @@ const GOLDEN = {
       role: 'pants',
       id: 'sand',
       reason:
-        '裤子选沙色：与上衣形成 0.69 明度差，中性安全；夏季用浅冷低饱和保持清爽，下半身更稳。',
+        '裤子选沙色：与上衣形成 0.69 明度差，中性安全；重心落在下半身。',
     },
     {
       role: 'shoes',
       id: 'ivory',
       reason:
-        '鞋子选象牙：明度差 0.79，中性安全；夏季用浅冷低饱和保持清爽，收住整体。',
+        '鞋子选象牙：明度差 0.79，中性安全；收住整体。',
     },
     {
       role: 'accent',
@@ -240,6 +240,22 @@ describe('profile golden', () => {
       pieces: [topPiece(BLACK)],
     }
     expect(signature(recommend(input))).toEqual(GOLDEN)
+  })
+
+  it('states the season rationale once, outside the row copy', () => {
+    const result = recommend({
+      gender: 'female',
+      provinceId: 'guangdong',
+      month: 7,
+      pieces: [topPiece(BLACK)],
+    })
+    expect(result.seasonNote).toContain('夏季')
+    const reasons = [
+      result.primary.inner.reason,
+      result.primary.pants.reason,
+      result.primary.shoes.reason,
+    ]
+    for (const reason of reasons) expect(reason).not.toContain('夏季')
   })
 })
 

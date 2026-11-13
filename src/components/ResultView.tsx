@@ -142,6 +142,9 @@ export function ResultView({
             <p className="mt-2 max-w-prose text-sm leading-6 text-muted-foreground">
               {HARMONY_DESCRIPTIONS[harmonyKey]}
             </p>
+            <p className="mt-2 max-w-prose text-sm leading-6 text-muted-foreground">
+              {result.seasonNote}
+            </p>
             {note && (
               <p className="mt-2 max-w-prose text-sm leading-6 text-muted-foreground">
                 {note}
@@ -152,6 +155,23 @@ export function ResultView({
                 {result.pairNote}
               </p>
             )}
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-[11px] text-muted-foreground">
+              第 {variant + 1} / {batchCount} 组
+            </span>
+            <Button
+              type="button"
+              variant="accent"
+              size="sm"
+              onClick={onSwap}
+              aria-label={`换一套方案（第 ${variant + 1} 组，共 ${batchCount} 组）`}
+              className="h-11 sm:h-9"
+            >
+              <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+              换一套
+            </Button>
           </div>
 
           <div className="space-y-1.5">
@@ -192,24 +212,11 @@ export function ResultView({
         <Card>
           <CardContent className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-baseline gap-2">
-                <h3 className="text-sm font-semibold">方案</h3>
-                <span className="text-[11px] text-muted-foreground">
-                  第 {variant + 1} / {batchCount} 组
-                </span>
-              </div>
-              <Button
-                type="button"
-                variant="accent"
-                size="sm"
-                onClick={onSwap}
-                aria-label={`换一套方案（第 ${variant + 1} 组，共 ${batchCount} 组）`}
-                className="h-11 sm:h-9"
-              >
-                <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
-                换一套
-              </Button>
+              <h3 className="text-sm font-semibold">方案</h3>
             </div>
+            <p className="text-[11px] text-muted-foreground">
+              圆点顺序：内搭 · 上衣 · 裤子 · 鞋 · 点缀
+            </p>
             <div className="grid gap-2">
               {combos.map((item, index) => (
                 <button

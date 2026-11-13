@@ -225,7 +225,10 @@ export function ColorStep({
             </section>
 
             {other && (anchorColor || otherColor) && (
-              <section className="space-y-3 border-t border-border pt-5">
+              <section
+                id="second-piece"
+                className="space-y-3 border-t border-border pt-5"
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-xs font-medium text-muted-foreground">
@@ -294,11 +297,33 @@ export function ColorStep({
           </p>
         )}
 
-        <div className="flex items-center justify-between gap-3">
+        <div className="sticky bottom-0 z-30 -mx-5 -mb-5 flex items-center gap-2 rounded-b-3xl border-t border-border bg-card px-5 py-3 sm:static sm:mx-0 sm:mb-0 sm:rounded-none sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
           <Button variant="outline" onClick={onBack}>
             返回
           </Button>
-          <Button size="lg" onClick={onNext} disabled={!anchorColor}>
+          {other && !secondOpen && (
+            <button
+              type="button"
+              onClick={() => {
+                setSecondOpen(true)
+                requestAnimationFrame(() =>
+                  document
+                    .getElementById('second-piece')
+                    ?.scrollIntoView({ block: 'start', behavior: 'smooth' }),
+                )
+              }}
+              aria-label={`添加一件${ROLE_LABELS[other]}`}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border text-lg leading-none hover:bg-muted"
+            >
+              +
+            </button>
+          )}
+          <Button
+            size="lg"
+            onClick={onNext}
+            disabled={!anchorColor}
+            className="ml-auto"
+          >
             查看搭配
           </Button>
         </div>

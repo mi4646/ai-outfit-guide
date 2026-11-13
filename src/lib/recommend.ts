@@ -68,6 +68,8 @@ export interface Recommendation {
   batchCount: number
   avoid: Array<{ color: ColorEntry; reason: string }>
   harmony: { key: HarmonyKey; label: string; description: string }
+  /** 季节理由只说一次，不重复进每条单品的行内文案。 */
+  seasonNote: string
   anchorRole: AnchorRole
   pairNote: string | null
 }
@@ -100,10 +102,10 @@ export const HARMONY_DESCRIPTIONS: Record<HarmonyKey, string> = {
 }
 
 const SEASON_REASONS: Record<Season, string> = {
-  spring: '春季用明亮暖调提气色',
-  summer: '夏季用浅冷低饱和保持清爽',
-  autumn: '秋季用暖而低的色调压住整体',
-  winter: '冬季用深冷或高对比色稳住重心',
+  spring: '明亮暖调提气色',
+  summer: '浅冷低饱和保持清爽',
+  autumn: '暖而低的色调压住整体',
+  winter: '深冷或高对比色稳住重心',
 }
 
 type WeightKey =
@@ -389,13 +391,11 @@ function reasonFor(
   role: Role,
   pick: Scored,
   anchor: { role: AnchorRole; color: ColorEntry; oklch: Oklch },
-  season: Season,
 ): string {
   const difference = Math.abs(anchor.oklch.l - pick.oklch.l).toFixed(2)
   const harmony = HARMONY_LABELS[
     classifyHarmony(anchor.color.hex, pick.color.hex)
   ]
-  const seasonText = SEASON_REASONS[season]
   const label = anchorLabel(anchor.role)
 
   if (role === 'accent') {
@@ -405,15 +405,15 @@ function reasonFor(
     ).toFixed(0)}°，小面积对比，约占 10%。`
   }
   if (role === 'shoes') {
-    return `鞋子选${pick.color.name}：明度差 ${difference}，${harmony}；${seasonText}，收住整体。`
+    return `鞋子选${pick.color.name}：明度差 ${difference}，${harmony}；收住整体。`
   }
   if (role === 'pants') {
-    return `裤子选${pick.color.name}：与${label}形成 ${difference} 明度差，${harmony}；${seasonText}，下半身更稳。`
+    return `裤子选${pick.color.name}：与${label}形成 ${difference} 明度差，${harmony}；重心落在下半身。`
   }
   if (role === 'top') {
-    return `上衣选${pick.color.name}：与${label}形成 ${difference} 明度差，${harmony}；${seasonText}。`
+    return `上衣选${pick.color.name}：与${label}形成 ${difference} 明度差，${harmony}。`
   }
-  return `内搭选${pick.color.name}：与${label}形成 ${difference} 明度差，${harmony}；${seasonText}。`
+  return `内搭选${pick.color.name}：与${label}形成 ${difference} 明度差，${harmony}。`
 }
 
 function fixedReason(role: Role): string {
@@ -425,7 +425,6 @@ function fixedReason(role: Role): string {
 function toCombo(
   picks: Record<Role, Scored>,
   anchor: { role: AnchorRole; color: ColorEntry; oklch: Oklch },
-  season: Season,
   fixedByRole: Partial<Record<Role, Scored>>,
 ): OutfitCombo {
   const pick = (role: Role): RolePick => {
@@ -441,7 +440,7 @@ function toCombo(
           role,
           color: scored.color,
           score: scored.score,
-          reason: reasonFor(role, scored, anchor, season),
+          reason: reasonFor(role, scored, anchor),
         }
   }
 
@@ -539,7 +538,7 @@ function buildCombos(
   return {
     combos: chosen
       .slice(start, start + BATCH_SIZE)
-      .map(({ picks }) => toCombo(picks, anchor, season, fixedByRole)),
+      .map(({ picks }) => toCombo(picks, anchor, fixedByRole)),
     batchCount,
   }
 }
@@ -636,6 +635,7 @@ export function recommend(input: RecommendationInput): Recommendation {
       label: HARMONY_LABELS[key],
       description: HARMONY_DESCRIPTIONS[key],
     },
+    seasonNote: `季节基调：${SEASON_LABELS[season]}，${SEASON_REASONS[season]}。`,
     anchorRole: input.pieces[0].role,
     pairNote: input.pieces.length === 2 ? pairNoteFor(top, pants) : null,
   }
